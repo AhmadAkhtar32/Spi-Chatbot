@@ -1,0 +1,53 @@
+SPI Support Guide — Common Issues & Troubleshooting
+
+1. Login / Session Issues
+Symptom: User reports being logged out repeatedly, or "session expired"
+errors within minutes of logging in.
+Common root cause: SPI session timeout is tied to system clock sync
+between the client's PowerBuilder terminal and the application server.
+If the terminal's local clock has drifted more than 5 minutes from the
+server, sessions expire early. First check: compare terminal system time
+to server time before escalating further.
+
+2. Report Generation Failures
+Symptom: A report (e.g., Stock Status Report, Payroll Summary) fails to
+generate or returns a blank result, even though data clearly exists.
+Common root cause #1: The report's underlying DataWindow is filtering on
+a date range field that doesn't match the client's regional date format
+(DD/MM/YYYY vs MM/DD/YYYY) — this silently returns zero rows instead of
+erroring.
+Common root cause #2: The report references a view that depends on both
+Oracle and SQL Server data (cross-database join). If the linked-server
+connection between the two is down, the report fails without a clear
+error message — check the linked-server status first.
+
+3. Slow Performance During Month-End
+Symptom: Multiple clients report SPI becoming slow specifically during
+month-end close, especially Finance and Payroll modules.
+Common root cause: Month-end batch jobs (depreciation runs, payroll
+posting) compete for the same database resources as live user queries.
+Recommended first step: check if batch jobs are scheduled to run during
+business hours instead of overnight — this is the most common cause and
+should be checked before assuming a hardware/capacity issue.
+
+4. Data Sync Discrepancies Between Modules
+Symptom: Inventory shows different stock numbers than what a Sales order
+confirmation reflects.
+Common root cause: A pending stock adjustment or transfer hasn't been
+"posted" yet — SPI treats unposted transactions as provisional, so they
+don't appear in real-time stock counts until finalized. Ask the user to
+confirm whether the adjustment was saved as Draft vs Posted before
+escalating as a data integrity bug.
+
+5. Printing / Label Issues
+Symptom: Barcode labels print with garbled characters or wrong sizing.
+Common root cause: Printer driver mismatch — SPI's barcode module
+requires the printer to be set to the exact DPI specified in the label
+template (Inventory > Configuration > Label Templates). A generic/
+default printer driver will misrender the barcode font.
+
+6. Escalation Guidance
+If none of the above apply, or the issue involves potential data loss,
+escalate to Tier 2 immediately rather than continuing first-line
+troubleshooting — do not attempt manual database edits without Tier 2
+sign-off, even if the fix seems obvious.

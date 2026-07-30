@@ -1,0 +1,17 @@
+# Environment files (contain secret keys — never commit these)
+.env
+backend/.env
+spi-chatbot/backend/.env
+
+# Python
+__pycache__/
+*.pyc
+
+# Node / React
+node_modules/
+dist/
+.vite/
+
+# OS junk
+.DS_Store
+Thumbs.db

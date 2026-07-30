@@ -1,0 +1,53 @@
+SPI Support Knowledge Base — Inventory & Sync Incidents
+
+INCIDENT TYPE: Stock Count Mismatch Between Warehouses
+Symptoms: A client reports that the same item shows different stock
+quantities on two different screens (e.g., Stock Status Report vs.
+Warehouse Transfer screen).
+Root Cause (most common): An in-transit stock transfer between
+warehouses was left in "Pending Receipt" status and never confirmed at
+the destination warehouse. The source warehouse has already deducted
+the stock, but the destination hasn't received it yet, so the item
+appears to be "missing" from both counts temporarily.
+Resolution Steps:
+1. Check Inventory > Transfers > Pending Receipts for any transfer
+   involving the affected item.
+2. If a transfer is stuck in Pending, confirm with the warehouse staff
+   whether the physical stock actually arrived.
+3. If it arrived, complete the receipt confirmation in SPI. If it did
+   not arrive, escalate to warehouse operations — this is a physical
+   logistics issue, not a software bug.
+Escalate to Engineering only if: no pending transfer exists and the
+mismatch still cannot be explained by manual stock adjustments.
+
+INCIDENT TYPE: Reorder Point Not Triggering Purchase Suggestion
+Symptoms: Stock has fallen below the configured reorder point, but no
+suggested Purchase Order appears in Purchase > Suggested Orders.
+Root Cause (most common): The item's Replenishment Rule was configured
+with a "Preferred Supplier" left blank. SPI will not auto-generate a
+suggested PO without a preferred supplier assigned, even if the reorder
+point logic is otherwise correctly configured.
+Resolution Steps:
+1. Navigate to Inventory > Configuration > Replenishment Rules for the
+   affected item.
+2. Confirm a Preferred Supplier is assigned.
+3. If missing, assign one and re-run the nightly Reorder Suggestion job
+   manually via Inventory > Utilities > Run Reorder Job Now.
+Escalate to Engineering only if: a preferred supplier is assigned and
+the item still doesn't generate a suggestion after a manual job run.
+
+INCIDENT TYPE: Barcode Scan Not Recognized During Stock Count
+Symptoms: Warehouse staff scan a barcode during a cycle count and get
+"Item Not Found," even though the item exists in the system.
+Root Cause (most common): The barcode printed on the physical label
+doesn't match the Bin Location code format configured in SPI (see
+Implementation Guide — Bin Location codes must follow AA-00-00 format).
+Older labels printed before a warehouse reconfiguration are a frequent
+cause of this after a client's warehouse layout changes.
+Resolution Steps:
+1. Confirm the current Bin Location format under Inventory >
+   Configuration > Warehouse Setup.
+2. Compare against the physical label — if it doesn't match, the label
+   needs to be reprinted, this is not a data or software issue.
+Escalate to Engineering only if: the label format matches the
+configured Bin Location format exactly and the scan still fails.

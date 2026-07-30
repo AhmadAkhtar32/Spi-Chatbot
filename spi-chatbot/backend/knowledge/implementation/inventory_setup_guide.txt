@@ -1,0 +1,43 @@
+SPI Implementation Guide — Inventory Module Setup
+
+1. Prerequisites
+Before configuring the Inventory module, confirm the client's chart of
+accounts has been finalized and the warehouse hierarchy (Site > Warehouse
+> Bin Location) has been agreed upon during discovery. Inventory setup
+cannot begin until the client has provided a finalized item master list
+in the standard SPI import template.
+
+2. Warehouse Hierarchy Configuration
+Navigate to Inventory > Configuration > Warehouse Setup. Create Sites
+first, then Warehouses under each Site, then Bin Locations under each
+Warehouse. Bin Location codes must follow the format AA-00-00 (Aisle-
+Rack-Shelf) to remain compatible with the barcode scanning module.
+
+3. Item Master Import
+Use Inventory > Configuration > Item Master Import to bulk-load items
+from the client's finalized template. Common gap: clients often don't
+have a consistent unit-of-measure (UOM) standard across items — this is
+the single most frequent blocker during Inventory go-live and should be
+flagged during discovery, not during import.
+
+4. Reorder Point & Safety Stock Rules
+Configure reorder points under Inventory > Configuration > Replenishment
+Rules. If the client does not have historical consumption data, apply a
+default safety stock of 15% above average monthly usage until at least
+one full quarter of real data is available, then revisit.
+
+5. Common Gap Analysis Findings
+- Clients frequently expect automatic reorder-to-PO generation; this
+  requires the Purchase module to also be licensed and configured —
+  flag this dependency early if the client has only licensed Inventory.
+- Multi-currency stock valuation is not supported out of the box and
+  requires a custom valuation script — treat as a scoped change request,
+  not standard configuration.
+- Barcode label printing requires a separate hardware integration step,
+  not covered in standard Inventory configuration; scope separately.
+
+6. Go-Live Checklist
+- Item master imported and validated (spot-check 10% of SKUs)
+- Warehouse hierarchy matches client's physical site layout
+- Reorder rules configured for at least top 20% of SKUs by usage volume
+- At least one full cycle count completed in the test environment

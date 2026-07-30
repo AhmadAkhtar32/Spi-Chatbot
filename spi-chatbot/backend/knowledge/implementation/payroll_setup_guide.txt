@@ -1,0 +1,42 @@
+SPI Implementation Guide — Payroll Module Setup
+
+1. Prerequisites
+Payroll configuration cannot begin until Finance module chart-of-accounts
+mapping is complete, since every payroll run posts journal entries back
+to Finance. Confirm this dependency with the client during scoping —
+Payroll cannot be configured standalone without Finance already active.
+
+2. Employee Master Setup
+Navigate to Payroll > Configuration > Employee Master. Employee records
+require a valid tax jurisdiction code before any salary structure can be
+assigned. Common gap: clients operating across multiple provinces/states
+often don't have jurisdiction codes standardized in their HR data —
+flag this during discovery.
+
+3. Salary Structure Configuration
+Salary structures (Payroll > Configuration > Salary Structures) define
+earning and deduction components. At least one structure must be marked
+as default before any employee can be onboarded into Payroll.
+
+4. Attendance Integration
+If the client has an existing biometric attendance system, Payroll can
+integrate via the Attendance Import utility (Payroll > Configuration >
+Attendance Source). Without an existing system, attendance must be
+entered manually each cycle — flag this as an operational cost the
+client should be aware of before go-live, not after.
+
+5. Common Gap Analysis Findings
+- Multi-currency payroll (for clients with international employees) is
+  not supported out of the box and requires a custom disbursement
+  module — treat as a change request.
+- Clients frequently assume Payroll includes tax filing/compliance
+  reporting for their specific country; this is jurisdiction-specific
+  and must be scoped separately per client's location.
+- End-of-service / severance calculations vary significantly by region
+  and are not covered by the default salary structure engine.
+
+6. Go-Live Checklist
+- Finance chart-of-accounts mapping confirmed and tested
+- Employee master fully imported with valid tax jurisdiction codes
+- At least one full parallel payroll run completed and reconciled
+  against the client's previous system before cutover

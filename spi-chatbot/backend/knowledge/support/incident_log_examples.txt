@@ -1,0 +1,45 @@
+SPI Support — Past Incident Log (Reference Examples)
+
+Incident #1042
+Reported issue: Client's Inventory module showed negative stock for
+several SKUs after a bulk stock adjustment import.
+Root cause: The import file used a different UOM (units) than what was
+configured for those items in the Item Master, causing quantities to be
+misread by a conversion factor.
+Resolution: Reversed the bad import, corrected the UOM mapping in the
+import template, re-ran the import. Recommended client standardize UOM
+per item before any future bulk imports.
+Category: Inventory / Data Import
+
+Incident #1057
+Reported issue: Payroll postings to Finance were duplicated for one pay
+cycle, inflating expense totals.
+Root cause: The payroll batch job was manually re-run after a timeout,
+without checking whether the first run had already partially posted to
+Finance before failing.
+Resolution: Reversed the duplicate journal entries in Finance, added a
+lock/checkpoint step so payroll batch jobs cannot be re-run once posting
+to Finance has started.
+Category: Payroll / Finance Integration
+
+Incident #1063
+Reported issue: A client's custom report combining Sales and Purchase
+data intermittently returned incomplete results.
+Root cause: The report relied on a scheduled overnight sync between the
+Oracle (Sales) and SQL Server (Purchase) databases; on nights the sync
+job failed silently, the report ran against stale data without any error
+being surfaced to the user.
+Resolution: Added a "last synced" timestamp visible on the report itself,
+and an alert to the DBA team if the sync job fails, instead of failing
+silently.
+Category: Cross-Module Reporting / Data Sync
+
+Incident #1071
+Reported issue: Multiple users at one client reported random logouts
+throughout the day.
+Root cause: The client's terminal server clocks had drifted out of sync
+with the SPI application server due to a misconfigured NTP setting.
+Resolution: Corrected NTP configuration on the client's terminal server;
+recommended periodic clock-sync checks as part of that client's IT
+maintenance routine.
+Category: Session Management / Infrastructure

@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-bg text-ink antialiased;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Thin, understated scrollbar — no theme switcher, just a quiet default */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Styling for markdown rendered inside assistant messages */
+.assistant-markdown {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #111827;
+}
+.assistant-markdown p {
+  margin: 0 0 8px 0;
+}
+.assistant-markdown p:last-child {
+  margin-bottom: 0;
+}
+.assistant-markdown ul, .assistant-markdown ol {
+  margin: 4px 0 8px 0;
+  padding-left: 20px;
+}
+.assistant-markdown li {
+  margin-bottom: 2px;
+}
+.assistant-markdown strong {
+  font-weight: 600;
+}
+.assistant-markdown code {
+  background: #F1F5F9;
+  border: 1px solid #E5E7EB;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 13px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+.assistant-markdown pre {
+  background: #0F172A;
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+.assistant-markdown pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #E2E8F0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.assistant-markdown table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+  font-size: 13.5px;
+}
+.assistant-markdown th, .assistant-markdown td {
+  border: 1px solid #E5E7EB;
+  padding: 6px 10px;
+  text-align: left;
+}
+.assistant-markdown th {
+  background: #F8FAFC;
+  font-weight: 600;
+  color: #374151;
+}

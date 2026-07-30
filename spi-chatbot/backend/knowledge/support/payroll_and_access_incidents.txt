@@ -1,0 +1,68 @@
+SPI Support Knowledge Base — Payroll & Access Incidents
+
+INCIDENT TYPE: Payroll Run Shows Incorrect Tax Deduction
+Symptoms: An employee's payslip shows a tax deduction that doesn't match
+expected values for their jurisdiction.
+Root Cause (most common): The employee's Tax Jurisdiction Code was
+changed mid-cycle (e.g., after a transfer between provinces/states) but
+the current payroll run was already in "Draft" status before the change,
+so it's still using the old jurisdiction's tax table.
+Resolution Steps:
+1. Check Payroll > Employee Master for the affected employee's current
+   Tax Jurisdiction Code.
+2. If it was recently changed, the current draft payroll run must be
+   discarded and regenerated — edits to jurisdiction do not retroactively
+   apply to an already-drafted run.
+3. Confirm with Finance before discarding a run if it has already been
+   partially approved.
+Escalate to Engineering only if: the jurisdiction code is correct and
+was not recently changed, and the tax calculation still appears wrong.
+
+INCIDENT TYPE: Employee Cannot Be Onboarded Into Payroll
+Symptoms: HR staff try to add a new employee to Payroll and get a
+validation error blocking save.
+Root Cause (most common): No default Salary Structure has been marked
+in Payroll > Configuration > Salary Structures. SPI requires at least
+one structure marked "default" before any employee record can be saved,
+even if a specific structure will be manually assigned afterward.
+Resolution Steps:
+1. Check Payroll > Configuration > Salary Structures for a structure
+   marked as default.
+2. If none exists, mark an appropriate structure as default, then retry
+   onboarding the employee.
+Escalate to Engineering only if: a default structure exists and the
+error persists.
+
+INCIDENT TYPE: User Cannot Log Into SPI After Password Reset
+Symptoms: A user resets their password but still cannot log in — gets
+"Invalid Credentials" on their very next attempt.
+Root Cause (most common): SPI's session cache on the client's local
+PowerBuilder installation doesn't always refresh immediately after a
+server-side password reset; the client machine is still holding the old
+cached credential.
+Resolution Steps:
+1. Ask the user to fully close the SPI application (not just log out)
+   and reopen it before attempting login again.
+2. If that doesn't resolve it, ask them to restart their machine — this
+   clears any lingering session cache.
+3. Confirm the reset was actually applied server-side (check User
+   Management > Login Audit for a successful reset timestamp).
+Escalate to Engineering only if: the reset is confirmed successful in
+Login Audit, the application was fully restarted, and login still fails.
+
+INCIDENT TYPE: Report Generation Times Out for Large Date Ranges
+Symptoms: A user tries to generate a Sales or Inventory report for a
+date range longer than roughly 6 months and the report screen hangs or
+times out.
+Root Cause (most common): Reports pulling more than ~6 months of
+transactional data run against the live production tables without an
+indexed date filter fast path, causing the query to run very slowly on
+larger clients' datasets.
+Resolution Steps:
+1. Recommend the user break the report into smaller date ranges (e.g.,
+   quarterly instead of yearly) as an immediate workaround.
+2. Log the client's dataset size and date range for the reporting
+   performance backlog — this is a known scaling limitation, not a
+   one-off bug, and is tracked for a future indexing improvement.
+Escalate to Engineering only if: the report times out even for a date
+range under 1 month.
