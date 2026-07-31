@@ -4,24 +4,25 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: '#F4F6F8',
+        bg: '#F8FAFC',
         surface: '#FFFFFF',
-        border: '#D1D5DB',
+        border: '#E2E8F0',
         primary: '#2563EB',
         'primary-dark': '#1D4ED8',
-        ink: '#111827',
-        'ink-secondary': '#6B7280',
-        success: '#16A34A',
+        secondary: '#3B82F6',
+        accent: '#60A5FA',
+        ink: '#0F172A',
+        'ink-secondary': '#64748B',
+        success: '#22C55E',
         warning: '#F59E0B',
-        error: '#DC2626',
+        danger: '#EF4444',
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
-      spacing: {
-        // 8px baseline system — most values already fall on this grid
-        // via Tailwind's default scale (2=8px*0.5 etc.); these fill gaps.
-        18: '4.5rem',
+      boxShadow: {
+        card: '0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06)',
+        'card-hover': '0 4px 12px -2px rgba(15, 23, 42, 0.10), 0 2px 6px -2px rgba(15, 23, 42, 0.06)',
       },
       keyframes: {
         'fade-in': {
