@@ -61,22 +61,22 @@ const MODULES = [
   {
     key: 'project-knowledge',
     icon: FolderOpen,
-    iconBg: 'bg-slate-100',
-    iconColor: 'text-ink-secondary',
+    iconBg: 'bg-primary/10',
+    iconColor: 'text-primary',
     title: 'Project Knowledge Expert',
     description: 'Customer-specific documents, decisions, and history.',
-    to: null,
-    status: 'planned',
+    to: '/project-knowledge-expert',
+    status: 'active',
   },
   {
     key: 'document-generator',
     icon: FileText,
-    iconBg: 'bg-slate-100',
-    iconColor: 'text-ink-secondary',
+    iconBg: 'bg-primary/10',
+    iconColor: 'text-primary',
     title: 'Document Generator',
     description: 'Consistent, template-based deliverables.',
-    to: null,
-    status: 'planned',
+    to: '/document-generator',
+    status: 'active',
   },
   {
     key: 'licensing',
@@ -109,9 +109,8 @@ export default function Dashboard() {
             {getGreeting()}, Minahil
           </h1>
           <p className="text-[13.5px] text-ink-secondary max-w-2xl leading-relaxed">
-            Ask ERP data questions, get implementation guidance, or troubleshoot issues — all from
-            one assistant. BI Expert is live; Implementation and Support experts are being
-            connected next.
+            Ask ERP data questions, get implementation guidance, troubleshoot issues, search your
+            project's documents, or generate a Purchase Order — all five experts are live.
           </p>
         </div>
 
@@ -119,7 +118,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-7">
           <MetricCard icon={MessagesSquare} label="Conversations today" value="12" hint="+4 vs. yesterday" />
           <MetricCard icon={Clock3} label="Avg. response time" value="1.8s" hint="Across all experts" />
-          <MetricCard icon={Sparkles} label="Active experts" value="3 / 3" hint="All experts live" />
+          <MetricCard icon={Sparkles} label="Active experts" value="5 / 5" hint="All experts live" />
           <MetricCard icon={History} label="Queries resolved" value="47" hint="Last 7 days" />
         </div>
 
@@ -207,13 +206,14 @@ export default function Dashboard() {
               </div>
               <div className="space-y-3">
                 <div className="text-[12.5px] text-ink leading-relaxed pb-3 border-b border-border">
-                  <span className="font-medium">Conversation memory added.</span> Follow-up
-                  questions (e.g. "what about Coke?") now resolve correctly within BI Expert.
+                  <span className="font-medium">All 5 experts are now live.</span> Project
+                  Knowledge Expert (per-client document upload) and Document Generator
+                  (template-based deliverables) just went live alongside BI, Implementation, and
+                  Support Expert.
                 </div>
                 <div className="text-[12.5px] text-ink leading-relaxed">
-                  <span className="font-medium">Two new experts are live.</span>{' '}
-                  Implementation and Support Expert now have full chat interfaces, answering from
-                  real reference documents.
+                  <span className="font-medium">Conversation memory added.</span> Follow-up
+                  questions (e.g. "what about Coke?") now resolve correctly within BI Expert.
                 </div>
               </div>
             </section>
