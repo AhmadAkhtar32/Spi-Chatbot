@@ -12,13 +12,14 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from business_functions import AVAILABLE_FUNCTIONS
 from rag import KnowledgeBase, build_answer_prompt
+from document_generator import list_templates, generate_document
 
 load_dotenv()
 
@@ -40,6 +41,24 @@ app.add_middleware(
 # requests. Add a new entry here for Support Expert / Project Knowledge
 # Expert later — same engine, different folder.
 _knowledge_bases: dict[str, KnowledgeBase] = {}
+
+
+import re
+
+def sanitize_client_id(client_id: str) -> str:
+    """Client IDs become folder names on disk, so they're restricted to
+    safe characters only — this is the actual access-control boundary
+    that keeps one client's documents from ever being reachable via
+    another client's ID (e.g. no '..' path traversal)."""
+    if not re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", client_id):
+        raise ValueError("Invalid client_id: only letters, numbers, - and _ are allowed.")
+    return client_id
+
+
+def invalidate_knowledge_base(name: str):
+    """Call this after uploading a new document, so the next search
+    re-embeds and includes it instead of serving the stale cached version."""
+    _knowledge_bases.pop(name, None)
 
 
 def get_knowledge_base(name: str) -> KnowledgeBase:
@@ -240,4 +259,126 @@ def support_expert(req: ExpertRequest):
 
 
 frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+
+
+# --- Project Knowledge Expert (RAG, per-client, upload-based) --------------
+# Same rag.py engine as Implementation/Support Expert, but the knowledge
+# base folder is chosen per-client at request time (knowledge/project_knowledge/
+# <client_id>/), and documents are added via upload rather than pre-loaded —
+# this is the one expert scoped to a single customer's own documents.
+
+PROJECT_KNOWLEDGE_ROOT = "project_knowledge"
+
+
+@app.post("/api/project-knowledge/upload")
+async def upload_project_document(client_id: str = Form(...), file: UploadFile = File(...)):
+    try:
+        safe_client_id = sanitize_client_id(client_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    if not file.filename.lower().endswith(".txt"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only .txt files are supported right now. PDF/DOCX extraction can be added later.",
+        )
+
+    client_folder = KNOWLEDGE_DIR / PROJECT_KNOWLEDGE_ROOT / safe_client_id
+    client_folder.mkdir(parents=True, exist_ok=True)
+
+    contents = await file.read()
+    (client_folder / file.filename).write_bytes(contents)
+
+    # The knowledge base for this client is now stale (missing the new
+    # document) — drop it from the cache so the next question rebuilds it.
+    invalidate_knowledge_base(f"{PROJECT_KNOWLEDGE_ROOT}/{safe_client_id}")
+
+    return {"status": "uploaded", "filename": file.filename, "client_id": safe_client_id}
+
+
+@app.get("/api/project-knowledge/documents")
+def list_project_documents(client_id: str):
+    try:
+        safe_client_id = sanitize_client_id(client_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    client_folder = KNOWLEDGE_DIR / PROJECT_KNOWLEDGE_ROOT / safe_client_id
+    if not client_folder.exists():
+        return {"documents": []}
+    return {"documents": sorted(p.name for p in client_folder.glob("*.txt"))}
+
+
+class ProjectKnowledgeRequest(BaseModel):
+    client_id: str
+    question: str
+
+
+@app.post("/api/project-knowledge/chat", response_model=ExpertResponse)
+def project_knowledge_expert(req: ProjectKnowledgeRequest):
+    try:
+        safe_client_id = sanitize_client_id(req.client_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    if not GEMINI_API_KEY:
+        return ExpertResponse(
+            reply=(
+                "Demo mode: no GEMINI_API_KEY is set yet, so I can't call the real "
+                "model. Upload and retrieval are wired up — add your key to "
+                "backend/.env and this will answer for real."
+            ),
+            sources=[],
+        )
+    try:
+        from google import genai
+
+        kb = get_knowledge_base(f"{PROJECT_KNOWLEDGE_ROOT}/{safe_client_id}")
+        relevant_chunks = kb.search(req.question, top_k=5)
+
+        if not relevant_chunks:
+            return ExpertResponse(
+                reply=(
+                    f"No documents have been uploaded yet for client '{safe_client_id}'. "
+                    "Upload a document first, then ask again."
+                ),
+                sources=[],
+            )
+
+        prompt = build_answer_prompt(
+            f"Project Knowledge Expert for client '{safe_client_id}'",
+            req.question,
+            relevant_chunks,
+        )
+
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
+
+        sources = sorted({c["source"] for c in relevant_chunks})
+        return ExpertResponse(reply=response.text, sources=sources)
+    except Exception as exc:
+        return ExpertResponse(reply=f"Error calling Gemini: {exc}", sources=[])
+
+
+# --- Document Generator (template filling — deliberately NOT AI-based) ----
+# See document_generator.py for why this expert doesn't call Gemini at all.
+
+@app.get("/api/document-generator/templates")
+def get_document_templates():
+    return {"templates": list_templates()}
+
+
+class DocumentGenerateRequest(BaseModel):
+    template_id: str
+    fields: dict[str, str]
+
+
+@app.post("/api/document-generator/generate")
+def generate_document_endpoint(req: DocumentGenerateRequest):
+    try:
+        return generate_document(req.template_id, req.fields)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
 app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
