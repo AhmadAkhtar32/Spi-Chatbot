@@ -1,7 +1,7 @@
 const STYLES = {
   success: 'bg-success/10 text-success border-success/25',
   warning: 'bg-warning/10 text-warning border-warning/25',
-  error: 'bg-error/10 text-error border-error/25',
+  error: 'bg-danger/10 text-danger border-danger/25',
 }
 
 export default function StatusBadge({ type = 'success', label }) {
@@ -12,7 +12,7 @@ export default function StatusBadge({ type = 'success', label }) {
     >
       <span
         className={`w-1.5 h-1.5 rounded-full ${
-          type === 'success' ? 'bg-success' : type === 'warning' ? 'bg-warning' : 'bg-error'
+          type === 'success' ? 'bg-success' : type === 'warning' ? 'bg-warning' : 'bg-danger'
         }`}
       />
       {label}
