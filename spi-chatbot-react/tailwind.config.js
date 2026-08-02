@@ -21,8 +21,9 @@ export default {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        card: '0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06)',
-        'card-hover': '0 4px 12px -2px rgba(15, 23, 42, 0.10), 0 2px 6px -2px rgba(15, 23, 42, 0.06)',
+        card: '0 0 0 1px rgba(37, 99, 235, 0.07), 0 2px 10px -2px rgba(37, 99, 235, 0.14)',
+        'card-hover': '0 0 0 1px rgba(37, 99, 235, 0.16), 0 6px 18px -4px rgba(37, 99, 235, 0.30)',
+        'nav-glow': '0 0 0 1px rgba(37, 99, 235, 0.12), 0 2px 10px -2px rgba(37, 99, 235, 0.22)',
       },
       keyframes: {
         'fade-in': {

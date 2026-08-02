@@ -68,11 +68,12 @@ function SidebarLink({ to, label, icon: Icon, end, comingSoon, collapsed }) {
       end={end}
       title={collapsed ? label : undefined}
       className={({ isActive }) =>
-        `group flex items-center gap-3 px-3 py-2.5 rounded-md text-[13.5px] font-medium transition-colors
+        `group flex items-center gap-3 px-3 py-2.5 rounded-md text-[13.5px] font-medium
+         transition-all duration-150
          ${
            isActive
-             ? 'bg-primary/8 text-primary'
-             : 'text-ink-secondary hover:bg-slate-50 hover:text-ink'
+             ? 'bg-primary/8 text-primary shadow-nav-glow'
+             : 'text-ink-secondary hover:bg-primary/5 hover:text-ink hover:shadow-nav-glow'
          }`
       }
     >
