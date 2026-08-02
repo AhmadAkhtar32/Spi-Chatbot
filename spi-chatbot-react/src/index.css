@@ -3,14 +3,15 @@
 @tailwind utilities;
 
 @layer components {
-  /* Standard card: subtle shadow + thin border so it lifts off the
-     background without any glow/neon effect — used by module cards,
-     metric cards, chat bubbles, and every panel across the app. */
+  /* Standard card: soft blue-tinted glow at rest, deepening on hover —
+     used by module cards, metric cards, chat bubbles, and every panel
+     across the app. */
   .card {
-    @apply bg-surface border border-border rounded-lg shadow-card;
+    @apply bg-surface border border-border/60 rounded-lg shadow-card
+           transition-shadow duration-200 hover:shadow-card-hover;
   }
   .card-interactive {
-    @apply card transition-shadow duration-150 hover:shadow-card-hover hover:border-primary/30;
+    @apply card hover:border-primary/30;
   }
 }
 
