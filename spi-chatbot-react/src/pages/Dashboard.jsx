@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import SuggestionChip from '../components/SuggestionChip.jsx'
 import EmptyState from '../components/EmptyState.jsx'
+import AnimatedBackground from '../components/AnimatedBackground.jsx'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -81,9 +82,11 @@ export default function Dashboard() {
   const navigate = useNavigate()
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-8 py-8">
-        {/* Welcome */}
+    <div className="flex-1 relative overflow-hidden">
+      <AnimatedBackground />
+      <div className="absolute inset-0 overflow-y-auto">
+        <div className="max-w-5xl mx-auto px-8 py-8 relative z-10">
+          {/* Welcome */}
         <div className="mb-8">
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
@@ -156,6 +159,7 @@ export default function Dashboard() {
             />
           </div>
         </section>
+        </div>
       </div>
     </div>
   )
