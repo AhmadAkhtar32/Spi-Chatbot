@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import {
   MessageSquareText,
   Wrench,
@@ -84,9 +85,15 @@ export default function Dashboard() {
       <div className="max-w-5xl mx-auto px-8 py-8">
         {/* Welcome */}
         <div className="mb-8">
-          <h1 className="text-[22px] font-semibold text-ink mb-1 tracking-tight">
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="text-[30px] font-bold mb-1.5 tracking-tight bg-gradient-to-r from-[#1E3A8A] via-primary to-[#1E3A8A]
+                       bg-[length:200%_auto] bg-clip-text text-transparent animate-shimmer"
+          >
             {getGreeting()}, Minahil
-          </h1>
+          </motion.h1>
           <p className="text-[13.5px] text-ink-secondary max-w-2xl leading-relaxed">
             Ask ERP data questions, get implementation guidance, troubleshoot issues, search your
             project's documents, or generate a Purchase Order — all five experts are live.
