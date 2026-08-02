@@ -30,9 +30,15 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(4px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        shimmer: {
+          '0%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+          '100%': { backgroundPosition: '0% 50%' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.18s ease-out',
+        shimmer: 'shimmer 4s ease-in-out infinite',
       },
     },
   },
