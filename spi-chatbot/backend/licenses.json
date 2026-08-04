@@ -1,0 +1,11 @@
+{
+  "_comment": "License/entitlement config. Since there's no login system yet, this represents a single 'current_user' profile — once real authentication exists, this becomes a per-client/per-user lookup instead of one fixed entry. 'false' means the unified chat router will refuse to answer that category and return a not-authorized message instead, without revealing which internal expert would have handled it.",
+
+  "current_user": {
+    "bi_expert": true,
+    "implementation_expert": true,
+    "support_expert": false,
+    "project_knowledge_expert": true,
+    "document_generator": true
+  }
+}

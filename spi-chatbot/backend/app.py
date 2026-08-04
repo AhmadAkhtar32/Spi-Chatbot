@@ -8,6 +8,7 @@ Endpoint:
   ->                { "reply": "...", "trace": ["check_stock(item='Pepsi')"] }
 """
 
+import json
 import os
 from pathlib import Path
 
@@ -26,6 +27,13 @@ load_dotenv()
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 GEMINI_MODEL = "gemini-3.6-flash"
 KNOWLEDGE_DIR = Path(__file__).resolve().parent / "knowledge"
+
+# License config — see licenses.json. There's no login system yet, so this
+# is a single fixed "current_user" profile rather than a real per-user
+# lookup; that's the one piece a real auth system would replace later.
+with open(Path(__file__).resolve().parent / "licenses.json") as f:
+    _LICENSES = json.load(f)
+CURRENT_USER_LICENSE = _LICENSES.get("current_user", {})
 
 app = FastAPI(title="SPI Assistant API")
 
@@ -379,6 +387,196 @@ def generate_document_endpoint(req: DocumentGenerateRequest):
         return generate_document(req.template_id, req.fields)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
+
+
+# --- Unified Chat (routes to BI / Implementation / Support internally) ----
+# This is what the main chat screen actually calls now. The user never picks
+# an expert — a lightweight classification step decides which one handles
+# each message, and the licensing check runs before anything answers, so an
+# unlicensed category returns a clean "not authorized" message instead of
+# revealing which internal expert would have handled it.
+#
+# Project Knowledge Expert and Document Generator are deliberately NOT part
+# of this auto-routing: one needs a specific client/document selected, the
+# other needs a structured form. Both stay as their own explicit pages —
+# hiding *which conversational expert* answers is a very different thing
+# from hiding *tools that need their own UI*.
+
+def classify_intent(message: str, history: list[dict]) -> str:
+    from google import genai
+
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    history_text = "\n".join(f"{h['role']}: {h['content']}" for h in history[-6:])
+
+    prompt = f"""Classify the user's latest message into exactly one category.
+Respond with ONLY the category word, nothing else — no punctuation, no explanation.
+
+Categories:
+- bi_expert: questions about stock/inventory levels, order status, or finding a screen/menu in the ERP
+- implementation_expert: questions about setup, configuration steps, or gap analysis for ERP modules
+- support_expert: questions about troubleshooting, incidents, errors, or root causes of problems
+- general: greetings, small talk, or anything that doesn't clearly fit the above
+
+Recent conversation:
+{history_text}
+
+Latest message: {message}
+
+Category:"""
+
+    response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
+    category = response.text.strip().lower()
+    valid = {"bi_expert", "implementation_expert", "support_expert", "general"}
+    return category if category in valid else "general"
+
+
+def _unified_bi_answer(message: str, history: list[dict]) -> tuple[str, list[str]]:
+    """Same function-calling logic as /api/chat, but history is folded into
+    the prompt text instead of using previous_interaction_id — since a
+    unified conversation can jump between expert types turn to turn, a
+    single Gemini-side interaction thread isn't a clean fit here."""
+    from google import genai
+
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    trace: list[str] = []
+
+    history_text = "\n".join(f"{h['role']}: {h['content']}" for h in history[-6:])
+    input_text = f"Recent conversation:\n{history_text}\n\nCurrent question: {message}" if history else message
+
+    interaction = client.interactions.create(model=GEMINI_MODEL, input=input_text, tools=TOOLS)
+
+    while True:
+        fc_steps = [s for s in interaction.steps if s.type == "function_call"]
+        if not fc_steps:
+            break
+        function_results = []
+        for step in fc_steps:
+            func = AVAILABLE_FUNCTIONS[step.name]
+            result = func(**step.arguments)
+            args_str = ", ".join(f"{k}={v!r}" for k, v in step.arguments.items())
+            trace.append(f"{step.name}({args_str})")
+            function_results.append(
+                {"type": "function_result", "name": step.name, "call_id": step.id, "result": [{"type": "text", "text": result}]}
+            )
+        interaction = client.interactions.create(
+            model=GEMINI_MODEL, input=function_results, tools=TOOLS, previous_interaction_id=interaction.id
+        )
+
+    return interaction.output_text, trace
+
+
+def _unified_rag_answer(kb_name: str, expert_label: str, message: str, history: list[dict]) -> str:
+    from google import genai
+
+    kb = get_knowledge_base(kb_name)
+    relevant_chunks = kb.search(message, top_k=5)
+
+    history_text = "\n".join(f"{h['role']}: {h['content']}" for h in history[-6:])
+    question_with_context = f"Recent conversation:\n{history_text}\n\nCurrent question: {message}" if history else message
+
+    prompt = build_answer_prompt(expert_label, question_with_context, relevant_chunks)
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
+    return response.text
+
+
+def _unified_general_answer(message: str, history: list[dict]) -> str:
+    from google import genai
+
+    history_text = "\n".join(f"{h['role']}: {h['content']}" for h in history[-6:])
+    prompt = (
+        f"You are SPI Assistant, a helpful ERP assistant for D-Biz Solutions. "
+        f"Respond naturally and briefly.\n\nRecent conversation:\n{history_text}\n\nMessage: {message}"
+        if history
+        else f"You are SPI Assistant, a helpful ERP assistant for D-Biz Solutions. "
+        f"Respond naturally and briefly.\n\nMessage: {message}"
+    )
+    from google import genai
+
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
+    return response.text
+
+
+class UnifiedChatRequest(BaseModel):
+    message: str
+    history: list[dict] = []  # [{"role": "user"|"assistant", "content": "..."}]
+
+
+class UnifiedChatResponse(BaseModel):
+    reply: str
+    trace: list[str] = []
+
+
+NOT_AUTHORIZED_MESSAGE = (
+    "You are not authorized to use this feature. Please contact your administrator "
+    "to upgrade your license."
+)
+
+
+@app.post("/api/unified-chat", response_model=UnifiedChatResponse)
+def unified_chat(req: UnifiedChatRequest):
+    if not GEMINI_API_KEY:
+        return UnifiedChatResponse(
+            reply=(
+                "Demo mode: no GEMINI_API_KEY is set yet, so I can't call the real "
+                "model. The routing and licensing pipeline are wired up — add your "
+                "key to backend/.env and this will answer for real."
+            ),
+            trace=[],
+        )
+    try:
+        expert_id = classify_intent(req.message, req.history)
+
+        if expert_id != "general" and not CURRENT_USER_LICENSE.get(expert_id, False):
+            return UnifiedChatResponse(reply=NOT_AUTHORIZED_MESSAGE, trace=[])
+
+        if expert_id == "bi_expert":
+            reply, trace = _unified_bi_answer(req.message, req.history)
+            return UnifiedChatResponse(reply=reply, trace=trace)
+        elif expert_id == "implementation_expert":
+            reply = _unified_rag_answer("implementation", "Implementation Expert", req.message, req.history)
+            return UnifiedChatResponse(reply=reply, trace=[])
+        elif expert_id == "support_expert":
+            reply = _unified_rag_answer("support", "Support Expert", req.message, req.history)
+            return UnifiedChatResponse(reply=reply, trace=[])
+        else:
+            reply = _unified_general_answer(req.message, req.history)
+            return UnifiedChatResponse(reply=reply, trace=[])
+    except Exception as exc:
+        return UnifiedChatResponse(reply=f"Error: {exc}", trace=[])
+
+
+# --- Voice input (transcription, including Urdu) ---------------------------
+# Gemini's audio understanding is multilingual out of the box — a single
+# call handles both English and Urdu speech, so no separate Urdu-specific
+# pipeline is needed. The transcript is returned in its original language
+# and script, then fed into /api/unified-chat exactly like typed text.
+
+@app.post("/api/transcribe")
+async def transcribe_audio(file: UploadFile = File(...)):
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=400, detail="No GEMINI_API_KEY set yet — add it to backend/.env.")
+    try:
+        from google import genai
+        from google.genai import types
+
+        audio_bytes = await file.read()
+        mime_type = file.content_type or "audio/webm"
+
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=[
+                "Transcribe this audio clip exactly as spoken. It may be in English or Urdu. "
+                "Preserve the original language and script (write Urdu in Urdu script, not "
+                "transliterated). Output ONLY the transcription text — no labels, no explanation.",
+                types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
+            ],
+        )
+        return {"transcript": response.text.strip()}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
