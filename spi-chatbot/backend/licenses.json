@@ -1,10 +1,10 @@
 {
-  "_comment": "License/entitlement config. Since there's no login system yet, this represents a single 'current_user' profile — once real authentication exists, this becomes a per-client/per-user lookup instead of one fixed entry. 'false' means the unified chat router will refuse to answer that category and return a not-authorized message instead, without revealing which internal expert would have handled it.",
+  "_comment": "License/entitlement config for the unified chat router. Since there's no login system yet, this represents a single 'current_user' profile — once real authentication exists, this becomes a per-client/per-user lookup instead of one fixed entry. 'false' means the router refuses to answer that category and returns a not-authorized message instead, without revealing which internal expert would have handled it. Per current instructions: this demo user is licensed for Implementation and Support only — BI Expert questions (stock/orders/navigation) are deliberately NOT authorized.",
 
   "current_user": {
-    "bi_expert": true,
+    "bi_expert": false,
     "implementation_expert": true,
-    "support_expert": false,
+    "support_expert": true,
     "project_knowledge_expert": true,
     "document_generator": true
   }

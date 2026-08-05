@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { PackageSearch, ClipboardList, Compass, LifeBuoy } from 'lucide-react'
 import ChatMessage from '../components/ChatMessage.jsx'
@@ -22,7 +23,7 @@ const SUGGESTIONS = [
 ]
 
 export default function UnifiedChatPage() {
-  const [messages, setMessages] = useState([])
+  const { messages, setMessages } = useOutletContext()
   const [loading, setLoading] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const scrollRef = useRef(null)
