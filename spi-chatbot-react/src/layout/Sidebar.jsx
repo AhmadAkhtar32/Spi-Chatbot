@@ -1,13 +1,8 @@
 import { NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard,
   MessageSquareText,
-  Wrench,
-  LifeBuoy,
   FolderOpen,
   FileText,
-  History,
-  BarChart3,
   Settings,
   HelpCircle,
   ChevronsLeft,
@@ -15,14 +10,9 @@ import {
 } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/bi-expert', label: 'BI Expert', icon: MessageSquareText },
-  { to: '/implementation-expert', label: 'Implementation Expert', icon: Wrench },
-  { to: '/support-expert', label: 'Support Expert', icon: LifeBuoy },
-  { to: '/project-knowledge-expert', label: 'Project Knowledge Expert', icon: FolderOpen },
+  { to: '/', label: 'Chat', icon: MessageSquareText, end: true },
+  { to: '/project-knowledge-expert', label: 'Project Knowledge', icon: FolderOpen },
   { to: '/document-generator', label: 'Document Generator', icon: FileText },
-  { to: '/history', label: 'Conversation History', icon: History },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/reports', label: 'Reports', icon: FileText },
 ]
 
