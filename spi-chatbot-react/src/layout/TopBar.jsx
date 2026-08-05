@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Search, Bell, Settings, Sun, ChevronDown, User, LogOut } from 'lucide-react'
 
 export default function TopBar() {
+  const navigate = useNavigate()
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
 
@@ -37,7 +39,7 @@ export default function TopBar() {
           Light
         </div>
 
-        <IconButton title="Settings" onClick={() => {}}>
+        <IconButton title="Settings" onClick={() => navigate('/settings')}>
           <Settings className="w-4 h-4" strokeWidth={2} />
         </IconButton>
 
@@ -78,7 +80,10 @@ export default function TopBar() {
               <button className="w-full text-left px-3 py-2 text-[13px] text-ink-secondary hover:bg-slate-50 flex items-center gap-2">
                 <User className="w-3.5 h-3.5" /> Profile
               </button>
-              <button className="w-full text-left px-3 py-2 text-[13px] text-ink-secondary hover:bg-slate-50 flex items-center gap-2">
+              <button
+                onClick={() => navigate('/settings')}
+                className="w-full text-left px-3 py-2 text-[13px] text-ink-secondary hover:bg-slate-50 flex items-center gap-2"
+              >
                 <Settings className="w-3.5 h-3.5" /> Settings
               </button>
               <button className="w-full text-left px-3 py-2 text-[13px] text-danger hover:bg-slate-50 flex items-center gap-2 border-t border-border mt-1 pt-2">

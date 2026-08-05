@@ -1,36 +1,52 @@
 import { NavLink } from 'react-router-dom'
-import {
-  MessageSquareText,
-  FolderOpen,
-  FileText,
-  Settings,
-  HelpCircle,
-  ChevronsLeft,
-  ChevronsRight,
-} from 'lucide-react'
-
-const NAV_ITEMS = [
-  { to: '/', label: 'Chat', icon: MessageSquareText, end: true },
-  { to: '/project-knowledge-expert', label: 'Project Knowledge', icon: FolderOpen },
-  { to: '/document-generator', label: 'Document Generator', icon: FileText },
-  { to: '/reports', label: 'Reports', icon: FileText },
-]
+import { Plus, MessageSquareText, Settings, HelpCircle, ChevronsLeft, ChevronsRight } from 'lucide-react'
 
 const FOOTER_ITEMS = [
   { to: '/settings', label: 'Settings', icon: Settings },
   { to: '/help', label: 'Help', icon: HelpCircle },
 ]
 
-export default function Sidebar({ collapsed, onToggle }) {
+export default function Sidebar({ collapsed, onToggle, conversations, activeId, onNewChat, onSelectChat }) {
   return (
     <aside
       className={`shrink-0 h-full border-r border-border bg-surface flex flex-col transition-all duration-200 ${
         collapsed ? 'w-[68px]' : 'w-64'
       }`}
     >
-      <nav className="flex-1 overflow-y-auto py-4 px-2.5 flex flex-col gap-0.5">
-        {NAV_ITEMS.map((item) => (
-          <SidebarLink key={item.to} {...item} collapsed={collapsed} />
+      <div className="p-2.5">
+        <button
+          onClick={onNewChat}
+          title={collapsed ? 'New chat' : undefined}
+          className="w-full flex items-center gap-2 justify-center h-9 rounded-md bg-primary text-white
+                     text-[13px] font-medium hover:bg-primary-dark transition-colors shadow-nav-glow"
+        >
+          <Plus className="w-4 h-4 shrink-0" strokeWidth={2} />
+          {!collapsed && 'New chat'}
+        </button>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-2.5 pb-2 flex flex-col gap-0.5">
+        {!collapsed && (
+          <div className="px-2.5 py-1.5 text-[10.5px] font-semibold text-ink-secondary/80 uppercase tracking-wide">
+            Recent
+          </div>
+        )}
+        {conversations.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => onSelectChat(c.id)}
+            title={collapsed ? c.title : undefined}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-[13.5px] font-medium text-left
+                        transition-all duration-150
+              ${
+                c.id === activeId
+                  ? 'bg-primary/8 text-primary shadow-nav-glow'
+                  : 'text-ink-secondary hover:bg-primary/5 hover:text-ink hover:shadow-nav-glow'
+              }`}
+          >
+            <MessageSquareText className="w-4 h-4 shrink-0" strokeWidth={2} />
+            {!collapsed && <span className="truncate flex-1">{c.title}</span>}
+          </button>
         ))}
       </nav>
 
@@ -51,11 +67,10 @@ export default function Sidebar({ collapsed, onToggle }) {
   )
 }
 
-function SidebarLink({ to, label, icon: Icon, end, comingSoon, collapsed }) {
+function SidebarLink({ to, label, icon: Icon, collapsed }) {
   return (
     <NavLink
       to={to}
-      end={end}
       title={collapsed ? label : undefined}
       className={({ isActive }) =>
         `group flex items-center gap-3 px-3 py-2.5 rounded-md text-[13.5px] font-medium
@@ -68,16 +83,7 @@ function SidebarLink({ to, label, icon: Icon, end, comingSoon, collapsed }) {
       }
     >
       <Icon className="w-4 h-4 shrink-0" strokeWidth={2} />
-      {!collapsed && (
-        <span className="flex-1 flex items-center justify-between min-w-0">
-          <span className="truncate">{label}</span>
-          {comingSoon && (
-            <span className="text-[9.5px] font-semibold tracking-wide text-ink-secondary/70 bg-slate-100 rounded px-1.5 py-0.5 shrink-0 ml-2">
-              SOON
-            </span>
-          )}
-        </span>
-      )}
+      {!collapsed && <span className="truncate">{label}</span>}
     </NavLink>
   )
 }
