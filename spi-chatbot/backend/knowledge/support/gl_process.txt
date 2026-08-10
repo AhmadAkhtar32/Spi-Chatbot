@@ -1,0 +1,247 @@
+SPI General Ledger (GL) Module — PROCESS
+Source: Sidat Hyder Financials Software Guide
+
+### Process 
+
+[Vouchers Verification:]{.underline}
+
+As the name of the option implies this option is used to verify or
+un-verify all entered vouchers before they are actually posted. Posting
+in the GL system basically refers to the concepts that after posting
+these vouchers are locked for any further process and cannot be
+un-posted. However, verified vouchers can be unverified though a
+verified voucher is functionally the same as a posted voucher except
+that it can be unlocked/unverified as opposed to a posted voucher, which
+is not reversible once the process has been applied.
+
+[Getting there;]{.underline}
+
+On the main menu screen go to the Process menu and then select
+Verification.
+
+[Posting:]{.underline}
+
+The posting option basically locks the records for which posting is
+being run and updates posted balances while locking the posted voucher
+from undergoing any further modifications.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Process menu and then select Posting.
+This displays a list of all voucher types and corresponding vouchers
+that have been entered.
+
+The user is provided the facility to select one or more than one
+vouchers for posting. Select *All voucher Types* to simultaneously post
+all vouchers.
+
+[Period End]{.underline}
+
+As the name of the option implies this option is provided to enable the
+user to close periods that fall within the financial year of the
+company.
+
+Please note that once the period has been closed no vouchers entered
+during that period may be modified or deleted. Similarly, any entry for
+the period is not allowed though you can view/take out reports for all
+entered transactions for the period. Before you close the period, make
+sure that you have posted all the vouchers that were entered during the
+period. If you have marked any voucher for auto-reversal at close of
+period then the period end process creates a new voucher for the
+reversal effect and which is visible in the next period.
+
++---+---+-----------------------------------------------------------------+
+|   | * | > Please note that multiple periods may remain open during the  |
+|   | * | > entry of GL transactions.                                     |
+|   | N |                                                                 |
+|   | o |                                                                 |
+|   | t |                                                                 |
+|   | e |                                                                 |
+|   | * |                                                                 |
+|   | * |                                                                 |
++===+===+=================================================================+
+|   |   |                                                                 |
++---+---+-----------------------------------------------------------------+
+
+[Year End]{.underline}
+
+As the title implies, the option closes the financial year.
+
+Functionally both options perform the same basics and the only
+difference between the two lies in the fact that corresponding to
+titles, the permanent year end may be run only once to finally close the
+year whereas the temporary year end option remains available to be run
+as many times as required until and unless the permanent year end has
+been run to close the fiscal year.
+
+The year-end processes (both) initialize the income & expense accounts
+making them available for fresh entries for the year that follows. All
+document numbers are initialized as the system adapts the new year.
+
+As mentioned above, the permanent year-end can be run only once, after
+which the user is not allowed to modify data pertaining to that year
+whereas the temporary year-end process may be run multiple times to
+build fresh balances reflecting transaction entered between these
+processes of running the temporary year end.
+
+The system provides the user to create or not to create the year-end
+vouchers. If you have marked any voucher for auto-reversal at close of
+year then the year-end process creates a new voucher for the reversal
+effect and which is visible in the first period of the falling year.
+
++---+---+-----------------------------------------------------------------+
+|   | * | > Please make sure to take a backup of all data before running  |
+|   | * | > year-end processes. It is also to be noted that the system    |
+|   | N | > allows the user to keep open multiple years by running        |
+|   | o | > temporary year-ends on each year, which is linked to the user |
+|   | t | > setup.                                                        |
+|   | e |                                                                 |
+|   | * |                                                                 |
+|   | * |                                                                 |
++===+===+=================================================================+
+|   |   |                                                                 |
++---+---+-----------------------------------------------------------------+
+
+[Modify Calendar:]{.underline}
+
+If you wish to modify the calendar, click on this option and change the
+title and dates as per required.
+
+[Import Voucher:]{.underline}
+
+As the title implies this utility is provided to the GL user if the user
+wishes to import vouchers that have been generated through other
+applications, into the SHMA GL.
+
+Basically, the option requires the data (to be imported) to be made
+available in a particular format specific to the database design of some
+temporary tables that have been provided for the purpose. If the
+facility is required to be used, we request the user to consult our
+technical staff for assistance.
+
+[Foreign Currency Gain/Loss:]{.underline}
+
+This option is used to calculate gain or loss that result via
+fluctuations in foreign currency exchange rate effecting foreign
+currency transactions recorded in the GL.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Process menu and then select Foreign
+Currency Gain/Loss.
+
+This option may be run at any time of the year and the results may be
+viewed in all/any reporting currencies/currency. Please note that the
+system will calculate Foreign Currency Gain/Loss for only those accounts
+which have been defined as 'Asset or Liability' type account and the
+option to calculate F.C. Translation has been checked in the COA setup.
+
+Foreign currency gain/loss is computed based on the exchange rate (of
+the particular date of the transaction) that have been entered by the
+user. Obviously, this exchange rate needs to be different than the one
+entered in the voucher.
+
+The 'Calculate' button displays a calculation sheet, which demonstrates
+the gain/loss calculation. A calculation results in an accumulated
+balance of already created F.C. Gain/Loss vouchers that are displayed
+under the column titled, 'F.C. Gain/Loss already calculated'.
+
+A 'Generate Voucher' option is provided that generates a gain/loss
+voucher based on the above calculation. Click the button to initiate the
+process after selecting the type of voucher that you want to create to
+record the gain/loss. You must provide the number of the voucher if it
+has not been marked as to be auto-generated. Please note that these
+generated vouchers are automatically posted during the creation process
+and thus are unavailable for editing. However, these may be deleted by
+using the 'Delete' option. A list of generated voucher(s) is displayed
+and the user can simply select and delete the required voucher(s).
+
+[Re-Calculate Reporting Currencies:]{.underline}
+
+As the title implies, use this option to re-calculate reporting
+currencies that are reflects as such in various reports/online screen
+queries.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Process menu and then select
+Re-Calculate Reporting Currencies.
+
+The user may use this option any time, however it is best served in two
+occasions.
+
+**Case 1**: The change in the number of the reporting currency, which at
+times results with and at times without the introduction of a new
+reporting currency. This would require a re-calculation of reporting
+currencies.
+
+**Case 2**: The exchange rate of an existing reporting currency is
+modified and you wish to recalculate existing transactions for the
+currency to reflect the fresh rate.
+
+Click the option to open a selection window and specify the criteria for
+recalculating the data.
+
+Click the Re-Calculate button to see the requested results.
+
+[Replace activity accounts:]{.underline}
+
+The old accounts can be replaced by the new ones. On the main menu go to
+Process and click on the replace activity accounts. A screen will be
+displayed which allows you to enter old a/c number, new a/c number,
+voucher type and date.
+
+[Replace project code:]{.underline}
+
+Similarly, project code can also be replaced by entering the following
+options:
+
+[Replace analysis 2 code:]{.underline}
+
+Analysis 2 can be replaced by the new analysis 2.
+
+[Data Transfer:]{.underline}
+
+This utility is provided for the benefit of those users who use the GL
+package by running it on multiple sites while at the same time wishing
+to produce consolidated reports. Using this facility data from all sites
+can be merged independent of database type(s).
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Process menu and then select Data
+Transfer.
+
+The option simply merges data of multiple sites into one central
+database. The sites are treated as the source databases whereas the
+central db is treated as the target database in which data needs to be
+consolidated. Please ensure that identical installation parameters are
+defined at all sites for which data needs to be merged. Contact our
+support staff to facilitate the same. The following options are
+available under the data transfer option:
+
+[Export Data:]{.underline}
+
+Clicking the *Export Data* option opens up a window that contains
+various criteria that may be manipulatively defined for the export
+process. Data for a specific range of periods, specific sites and
+specific dates may also be transferred after making relative selections
+available on the screen.
+
+We suggest that you contact our support staff to initially configure the
+data transfer mode, which may be both online, or offline. An offline
+data transfer may take place by simply compressing (through choosing the
+"Make Zip File" option) and emailing it to the relevant site. The email
+process is also automated by recording the email address of the target
+site into the site setup defined earlier.
+
+[Import Data:]{.underline}
+
+This option is used to import data from one site to another.
+
+Prior to running the option, the user is warned that existing data will
+be overwritten. On receiving a go-ahead signal from the user (in the
+form of a *yes* click) the standard file dialogue box appears showing
+the file containing the data that needs to be exported. Selecting the
+required file and choosing to proceed starts the process and prompts the
+user on successful completion.

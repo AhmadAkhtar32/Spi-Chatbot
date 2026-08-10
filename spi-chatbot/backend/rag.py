@@ -1,13 +1,9 @@
 """
 RAG (Retrieval-Augmented Generation) engine.
 ----------------------------------------------
-This is the shared engine behind three of Atif's experts: Implementation
-Expert, Support Expert, and Project Knowledge Expert. Each one is just
-this same pipeline pointed at a different folder of documents:
-
-    knowledge/implementation/   -> Implementation Expert
-    knowledge/support/          -> Support Expert (add later)
-    knowledge/<client_id>/      -> Project Knowledge Expert (per-client docs)
+This is the shared engine behind Implementation Expert and Support Expert
+(and, later, Project Knowledge Expert). Each one is just this same
+pipeline pointed at a different folder of documents.
 
 How it works, in order:
   1. load_documents  — read every .txt file in a folder
@@ -17,11 +13,17 @@ How it works, in order:
   4. search          — embed the user's question the same way, then find
                         the chunks whose vectors are numerically closest
                         (cosine similarity) to the question's vector
-  5. build_prompt     — hand only those relevant chunks to Gemini, and
+  5. build_answer_prompt — hand only those relevant chunks to Gemini, and
                         ask it to answer using just that material
 
 Embeddings are computed once per knowledge base and cached in memory —
 re-embedding on every request would be slow and wasteful.
+
+NOTE: embedding calls are now batched (see BATCH_SIZE below). This
+wasn't needed for the original placeholder documents (a handful of
+chunks total), but real reference material — like the GL module guides —
+produces well over 100 chunks per knowledge base, and embedding APIs
+typically cap how many texts can go in a single request.
 """
 
 import math
@@ -72,9 +74,10 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 class KnowledgeBase:
     """One embedded, searchable set of documents (e.g. all Implementation
-    Expert setup guides). Built once, then reused across requests."""
+    Expert reference guides). Built once, then reused across requests."""
 
     EMBED_MODEL = "gemini-embedding-001"
+    BATCH_SIZE = 90  # texts per embed_content call — stays under typical API batch caps
 
     def __init__(self, folder: Path, client):
         self.client = client
@@ -94,16 +97,21 @@ class KnowledgeBase:
             return
 
         texts = [c["text"] for c in all_chunks]
-        result = self.client.models.embed_content(
-            model=self.EMBED_MODEL,
-            contents=texts,
-            config=EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
-        )
-        for chunk, embedding in zip(all_chunks, result.embeddings):
+        embeddings = []
+        for i in range(0, len(texts), self.BATCH_SIZE):
+            batch = texts[i : i + self.BATCH_SIZE]
+            result = self.client.models.embed_content(
+                model=self.EMBED_MODEL,
+                contents=batch,
+                config=EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
+            )
+            embeddings.extend(result.embeddings)
+
+        for chunk, embedding in zip(all_chunks, embeddings):
             chunk["embedding"] = embedding.values
         self.chunks = all_chunks
 
-    def search(self, query: str, top_k: int = 3) -> list[dict]:
+    def search(self, query: str, top_k: int = 5) -> list[dict]:
         """Return the top_k chunks most relevant to the query."""
         from google.genai.types import EmbedContentConfig
 

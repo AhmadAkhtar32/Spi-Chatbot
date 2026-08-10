@@ -1,0 +1,157 @@
+SPI General Ledger (GL) Module — USING GENERAL LEDGER
+Source: Sidat Hyder Financials Software Guide
+
+### General Ledger 
+
+The GL tab allows you to define different masks (formats) for A/C code
+type, A/C code mask, and the number of levels in the Chart of Accounts
+etc. In addition, you may also choose from a list of various parameters
+that you may want to invoke and select for the installation.
+
+The A/C Code tab allows you to define the structure of your Chart of
+Accounts, which may have a maximum of 20 characters, which may be
+segregated, by levels. Each level must consists of at least 1 character
+and maximizing may be determined by remaining within the total maximum
+limit of 20 characters.
+
+The GL tab further contains cheque payment, production Challan, and
+payable and receipt modules. It allows you to define other modules like:
+
+>  **No of rep.currencies**: Allow you
+> to assign number to the currencies.
+>
+>  **Customize voucher printing**: by
+> checking this box, you can customize your voucher printing.
+>
+>  **Allow quantity:** this option is
+> used for reporting purpose and shows the quantity of the product.
+>
+>  **Allow cheque payment against
+> bills**: by checking this box, cheque payment against bills will be
+> displayed.
+>
+>  **Withholding tax:** this option
+> will display the withholding tax on the screen.
+>
+>  **Invoice calculation**: if you wish
+> to see the invoice calculation, check on this box and calculation will
+> be displayed.
+>
+> >
+> **Show site code with voucher type code**: by checking this box, your
+> site code along with the voucher code will be displayed.
+
+### Cost Centre Format 
+
+Similar to the above, The Cost Centre Format tab allows you to define
+the structure of your Cost Centre accounting, depending on the various
+available parameters. The cost centre format entails the following
+options:
+
+>  **Cost centre code type:** it allows
+> you to assign the code type for example, numeric, alphanumeric,
+> uppercase, and lower case.
+>
+>  **Number of levels:** it allows you to define the
+> number of levels in the chart of Accounts etc; the maximum number of
+> levels is ten.
+>
+>  **Cost centre code mask:** this
+> option helps in defining the number of digits wanted for the cost
+> centre code
+>
+>  **Level separator:** it has three
+> options, dash, comma and full stop, by selecting one of the options
+> given, you can separate the number of levels in the digits.
+>
+>  **Cost centre code format:** this
+> box displays the code type as you keep changing it by using the
+> above-mentioned modules.
+
+**A/C Code Format:** this option helps in defining the levels of the
+code format. The maximum digits that can be entered are twenty.
+
+### Analysis setup 
+
+It gives the options for the level of analysis. The analysis can be
+optional, none and all. The maximum digits that can be entered are ten.
+It also requires the code mask that can be defined by clicking on the
+a/c code format.
+
+### Calendar for 2001-2002 
+
+This tab simply shows your financial year. You can select any year and
+can define the number of periods and the year format. The system will
+display months, starting and ending date, which you can amend, as well,
+if you want to.
+
+**Congratulations!** By now you have purchased and successfully
+installed Sidat Hyder Financials, "General Ledger Module**." "Sidat
+Hyder Financials**" will guide you through the various system
+functionality, usage requirements and procedures of newly bought system.
+It will explain what/how to enter data in the fields provided, it will
+also give you a conceptual idea of why something is required and its pre
+or post conditions if any.
+
+### Logging in 
+
+Double click on the Sidat Hyder Financials' icon on your desktop.
+
+The system will ask you for your user ID and password. Please make sure
+that you enter your ID in the upper case format.
+
+**Ok:** Click "**Ok**" to proceed.
+
+The following section will guide you through a few screens that you need
+to go through prior to entering setup information.
+
+### Getting there 
+
+On the main menu screen go to the file menu and then select change
+password. This will display the change password screen we are talking
+about.
+
+Why do I need to change the password? Actually, at the time of
+installation, by default your system password is set to "\*\*\*\*\*"
+(ask the implementation team for your password). There is no harm if you
+keep this password, however, if you want to change it -- you can. In
+addition, when in future you will create other users of the system they
+will have the same option of changing their passwords, set by you at the
+time of creation.
+
+### Passwords 
+
+Once, you select the change password option you will be working in the
+following screen:
+
+Ok: A "User ID" is displayed, however, the system provides you with the
+option to select, from a pick list, your choice of user ID. Simply you
+need to enter your old password followed by your new password. You need
+to enter the new password twice and then click "**Ok**".
+
+### Selecting your Printer 
+
+Also, on the main menu you can go to printers and can select different
+printers for your printing jobs.
+
++---+---+-----------------------------------------------------------------+
+|   | * | > The printers (local & network) already installed on your      |
+|   | * | > machine will be displayed in this screen                      |
+|   | N |                                                                 |
+|   | o |                                                                 |
+|   | t |                                                                 |
+|   | e |                                                                 |
+|   | * |                                                                 |
+|   | * |                                                                 |
++===+===+=================================================================+
+|   |   |                                                                 |
++---+---+-----------------------------------------------------------------+
+
+### How to work In the General Ledger (GL) Module 
+
+On the main menu screen go to the "select" menu and then select General
+Ledger. This will adjust the menus accordingly such as under setups menu
+only setups relevant to GL will be displayed.
+
+The following section will guide you through the different **select**
+screens for which information needs to be keyed in for future reference:

@@ -1,0 +1,74 @@
+SPI General Ledger (GL) Module — INSTALLING SIDAT HYDER FINANCIALS
+Source: Sidat Hyder Financials Software Guide
+
+### Start 
+
+Once the installation is complete click on the start button point to
+programs and then select Sidat Hyder Financials. The following screen
+will appear.
+
+> ### Adding information to "General tab" 
+
+This section lists the fields and explains how they can be used.
+
+>  **Company name**: Name of your
+> company will be entered here
+>
+>  **Company code:** A code that you will
+> give your company for identification purposes
+
+(By default 0001 will be set as company code)
+
+>  **Current site:** Enter a code for
+> the site you are installing this software at
+>
+>  **Number of users:** The number of
+> users who will be using this system. The number of users selected here
+> will limit the number of user that can be created during the user
+> setup
+>
+>  **Multi currency:** If you want your
+> system to handle multiple currencies then check this box
+>
+>  **Base curr. Code:** One of the
+> currencies you work with in your system will be your base currency its
+> code will be entered here
+>
+>  **Party name:** If you want to
+> create a different (custom) head for reporting purposes then you can
+> give it a name here
+>
+>  **Data transfer:** If you will be
+> generating data on multiple sites and want to transfer it then you
+> should check this box
+>
+>  **No. Of sites:** Enter the number of sites you
+> want to operate from. Later in the sites setup you will be able to
+> enter the same number of sites.
+>
+>  **Encrypt password:** If you want to
+> encrypt your password then check this box.
+>
+>  **Cost centre:** You can both select
+> a cost centre on income and expense basis, all or optional**.**
+>
+>  **Cost centre name:** You can custom
+> define your cost centre name**.**
+>
+>  **No. Of decimals:** You can define
+> the number of decimal places you want to work with in "General", when
+> dealing in "Quantity", "Product rate" and "Foreign currency rate".
+>
+>  **Applications:** A list of Sidat
+> Hyder Financials packages is available for you to select from. Note
+> the tabs at the top of the screen correspond to various applications,
+> e.g. if you select, as in the screen above, purchase, and inventory
+> and sales then the relevant tabs as shown will be enabled.
+>
+>  **Restricted Menu Options:** there
+> are two options available here:
+
+-   **Hide:** if you wish to hide the icons, click on this option
+
+-   **Disable:** by clicking on this option restricted icons will be
+    displayed
