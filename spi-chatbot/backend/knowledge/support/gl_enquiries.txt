@@ -1,0 +1,147 @@
+SPI General Ledger (GL) Module — ENQUIRIES
+Source: Sidat Hyder Financials Software Guide
+
+### Enquiries 
+
+[Transactions:]{.underline}
+
+This is a comprehensive on-screen search facility that filters and then
+accordingly displays GL transactions as per various criteria that is
+defined by the user.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Enquiries menu and then select
+Transactions.
+
+Selecting the options displays a list of all transactions that are
+present in the database. These transactions can now be filtered
+according to various criteria that are made available to the user in
+order to flush out, for display purposes, those transactions that are
+being searched for.
+
+Simply click the *Filer* button, which will take you to the criteria
+definition screen. Using the available options on the screen will
+facilitate you to track down transactions you may wish to see.
+
+The criteria screen contains:
+
+-   A list of column names corresponding to voucher fields
+
+-   Standard buttons representing criteria such as \>(greater than),
+    \<(less than), = (equal to) etc.
+
+-   In addition the screen also contains a list of standard functions
+    that may be manipulated to generate the desired results.
+
+Use the above facilities to generate the required data. For example if
+you wish to see transactions which have a Debit amount of 5,625 then
+commit the following query via the *Filter* screen
+
+Debit \> 5625
+
+The above lists transactions meeting the criteria. You can also directly
+type in a specific query in the *Specify filter* window or you may click
+on the various buttons (fields, criteria, functions) available on the
+screen and each click types in the required characters in the *Specify
+Filter* window to build up the eventual query.
+
+[Account Summary]{.underline}
+
+As the title implies, this options displays a summary of transactions
+for any given account.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Enquiries menu and then select
+*Account Summary*.
+
+Choose a valid ledger account code by double clicking the account code
+column or simply type in/enter a valid code.
+
+Click the Next and Previous buttons to view corresponding accounts.
+
+If multi currency is being used then choose the required Currency from
+the available drop down list box.
+
+Specify whether you want the summary to reflect posted, un-posted or
+both type of transactions.
+
+Based on the above a summary is generated containing the following
+columns:
+
+-   Account Code
+
+-   Account Title
+
+-   Period of the Account
+
+-   Debit and Credit of Opening Balance, Activity and Closing Balance
+
+[Summary of balances:]{.underline}
+
+This option displays a summary of all accounts and these balances are
+shown for the selected currency.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Enquiries menu and then select Summary
+of balances.
+
+If multi currency is being used then choose the required Currency from
+the available drop down list box otherwise the default currency is
+available.
+
+If required specify a date up-to which you want the summary to reflect
+balances on.
+
+Specify whether you want the summary to reflect posted, un-posted or
+both type of transactions.
+
+Based on the above a summary is generated containing the following
+columns:
+
+-   Account Code
+
+-   Account Title
+
+-   Debit
+
+-   Credit
+
+-   Balance
+
+[Activity Log:]{.underline}
+
+This is a comprehensive enquiries facility, which may be used by GL
+users to track the various processes that are performed, by various
+users, on the GL database.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Enquiries menu and then select
+*Activity Log*.
+
+The activity log screen contains various criteria that may be
+manipulated to generate results from the database based on the query
+defined through this criterion.
+
+Proper manipulation of the various available criteria includes the
+filtration of data to make available listings such
+
+-   User wise activities, including log in and log out times
+
+-   The various activities that have been performed by various or
+    specific users on a particular voucher
+
+-   Activities performed on a particular date by a particular user on a
+    particular voucher or voucher type
+
+-   A specific type of activity by all users or a specific user within a
+    particular period
+
+-   All activities within a given period for a particular company (if
+    multi companies are being used) - Etc.
+
+The above were examples. Now simply go the screen and start listings
+according to your requirements.

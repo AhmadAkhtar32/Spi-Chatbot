@@ -1,0 +1,220 @@
+SPI General Ledger (GL) Module — VOUCHERS
+Source: Sidat Hyder Financials Software Guide
+
+### Vouchers 
+
+Clicking this option displays a list of all voucher types that have been
+defined in the system. This list is displayed on the left hand side of
+the screen. Clicking any type will display a list of all vouchers that
+have been entered for the selected period, pertaining to the particular
+voucher type. The user may now create, edit, delete and print these
+vouchers. It is to be noted that the system does not allow the user to
+create system generated voucher types that are defined at the time of
+installation. These include sales voucher, purchase voucher, cheque
+payment voucher etc.
+
+>  **Enter voucher:** There are
+> multiple tabs on the voucher entry screen. It should be remembered
+> that the first tab is the actual voucher entry tab in which voucher
+> details are entered into the system. The rest of the tabs simply
+> reflect the entered voucher in respective reporting currencies, if the
+> multi-currency option has been activated. The default exchange rates
+> of these reporting currencies are picked from period-wise exchange
+> rate setup and are available for editing if the user wishes so. A
+> change in this rate is reflected in an automatic calculation of the
+> item's amount or vice versa. Please also note that before you attempt
+> to save the voucher; please ensure that it has been balanced on all
+> tabs.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Voucher menu and then select Enter
+Vouchers, which will display the option that is discussed below. The
+following fields are available on the Vouchers data entry screen.
+
+[Adding information to "Enter Voucher":]{.underline}
+
+>  **Voucher type:** Shows the type of
+> voucher that is being entered or edited.
+>
+>  **Voucher No:** Displays the voucher number that is
+> automatically generated or entered by the user, as per the criteria
+> defined for it, which has been discussed in voucher type setup.
+>
+>  **Narration:** The user is required
+> to enter the narration of the voucher in this field. Alphanumeric
+> entries are allowed.
+>
+>  **Date:** The voucher date is entered
+> here. Please note that the system will not accept any dates, which
+> fall outside the Date range specified for the current period.
+>
+>  **Auto reverse:** Checking this option results in
+> the creation of a reversal voucher in the next period on period end.
+>
+>  **Account code:** Double click to
+> choose or simply type in the account code for each transaction. Each
+> line is a separate transaction within the voucher and each voucher may
+> contain multiple transactions as many as are required.
+>
+>  **Account title:** The title of the
+> ledger account is displayed here. For the sake of convenience, the
+> user may wish to skip entries in the account code column and simply
+> type in the title of a valid ledger account. Doing so, results in
+> automatically displayed the related account head in the account code
+> column.
+>
+>  **Transaction description:** Please
+> type in the description of the transaction in this field.
+>
+>  **Trans currency:** If multi-currency
+> is being used, please choose the currency in which the transaction is
+> being entered.
+>
+>  **Debit/Credit:** Please enter the
+> debit or credit entry amount in these columns. Obviously, only one of
+> these columns may be filled with a value.
+>
+>  **Reference:** This is a simply
+> alphanumeric field that is used for referral purposes to the
+> transaction, e.g. the cheque number.
+>
+>  **Party:** If parties have been
+> defined in setup entries, then a list of parties is displayed here and
+> the user may choose the party to whom the particular transaction needs
+> to be linked with in order to later generate party wise analysis
+> reports.
+>
+>  **Cost centre:** If cost centers are
+> being used then choose a valid cost center.
+>
+>  **Quantity:** If required, please
+> enter the quantity for the in this field.
+>
+>  **Reference fields:** Similar to the
+> reference fields above, these are three additional reference fields,
+> which can be used to enter any optional data restricted to 25
+> characters. Please note that these are available only if reference
+> fields have been selected during installation setup.
+>
+>  **Save as default:** The system
+> allows the user to define various standard vouchers by saving them as
+> default vouchers. These may come in handy especially so for vouchers
+> that may be required to be entered repeatedly, depending on the
+> requirements of the company. An example may be a salary voucher. Thus,
+> the currently being entered voucher can be saved as a default voucher
+> by clicking this button and may be later recalled, as many times as
+> wished, and saved after making any required changes, for example the
+> date, amount etc. At the time of saving the default voucher you are
+> given the option to either save the Dr/Cr amounts or a percentage
+> distribution. In the latter case you are required to enter a figure of
+> 1.00 or less in the debit/credit columns. Both these figures must
+> total to 1.00. Doing this results in the system prompting you to enter
+> an amount (when this default voucher is called to create an actual
+> voucher) and which is then distributed in the debit/credit columns as
+> per the percentage defined earlier.
+>
+>  **Add:** Click this button to add a
+> new transaction.
+>
+>  **Insert:** Click this button to
+> insert a transaction between to existing transactions.
+>
+>  **Delete:** Click this button to
+> delete the currently selected transaction.
+>
+>  **Print:** By clicking on this
+> option a "print" screen will appear, containing check boxes. This
+> screen has following tags:
+
+-   Range
+
+-   Print voucher in
+
+-   Level
+
+-   Group level A/C etc
+
+>  **Default:** Clicking this button
+> displays the default account code, which is defined in the voucher
+> type setup.
+>
+>  **Balance voucher:** Click this button to
+> automatically balance the voucher. The balancing debit or credit
+> amount will be automatically adjusted in the currently selected
+> transaction. Please note that the balance voucher buttons works only
+> for the current screen, i.e. it does not balance other screens used
+> for reporting currencies and which must be separately balanced,
+> manually or via this button which may used after going to the relative
+> screens.
+>
+>  **Default voucher:** Click this
+> button to show a list of default vouchers. This screen has two more
+> options "generic" and "current voucher type". By clicking on "generic"
+> the whole list of vouchers will be displayed. The "current voucher
+> type" displays the details of the "current" voucher.
+
+>  **Function keys:** Click this button
+> to display a list of available function keys and their relative usage
+> that has been discussed in the voucher setup and may be referred to,
+> if required.
+
+[Copy Voucher:]{.underline}
+
+This facilitates the user to copy various voucher types or actual
+vouchers from on to another including from one company to another
+company. Options are provided to change the target period and the status
+(i.e. posted or un-posted).
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Voucher menu and then select copy
+Vouchers, which will display the option that is discussed below. The
+user is firstly required to select a voucher (or multiple vouchers) and
+click the copy button, which brings up another screen with the following
+fields that are discussed below:
+
+>  **Company:** In case you want to
+> copy the voucher or type from one company to another please select the
+> target company in this field. This is available only if multiple
+> companies are being used in the system.
+>
+>  **Voucher type:** If you want to
+> change the voucher type of the target voucher from the source voucher
+> then select the required type via this field.
+>
+>  **Voucher no:** Enter the voucher
+> number of the target voucher in this field. Please note that this is
+> enabled only if a single voucher is to be copied. If multiple vouchers
+> are being copied then this field is disabled and voucher numbers of
+> the source are copied onto the target.
+>
+>  **Period:** Please select the period
+> for the target voucher.
+>
+>  **Status:** Please select the status
+> of the target voucher, i.e. define whether the target voucher needs to
+> be created as posted or un-posted).
+>
+>  **Auto-generate:** This is available
+> only in case a single voucher is being copied from source to target.
+> Checking the option enables a new voucher number to be automatically
+> generated following the last voucher number in the target sequence.
+>
+>  **Copy:** If you want to copy a
+> voucher of a specific period, click on "copy", a "**copy** **vouchers
+> to**" window will appear which has the following options:
+
+-   Company
+
+-   Voucher type
+
+-   Voucher no
+
+-   Period
+
+-   Posted
+
+-   Verified
+
+-   Auto generate

@@ -1,0 +1,822 @@
+SPI General Ledger (GL) Module — REPORTS
+Source: Sidat Hyder Financials Software Guide
+
+### Reports 
+
+The reports window has the following setups:
+
+[Chart of accounts:]{.underline}
+
+As the title implies, this report is used to print the Chart of Accounts
+of a company or companies if the multiple companies' option is being
+used.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select *Chart of
+Accounts*.
+
+Click the option that takes you to the printing screen. There are
+various criteria available that allow you to print the Chart of Accounts
+for the given range of account codes.
+
+You may sort the report on account code, title creation date etc.
+
+If required, apply various available filters to generate the report
+based on required criteria.
+
+[Transaction Listing:]{.underline}
+
+As the title implies, the selected report displays a summary of
+transactions for any given account.
+
+[Getting there]{.underline}:
+
+On the main menu screen go to the Reports menu and then select
+*Transaction*
+
+*Listing*.
+
+Click the option that takes you to the printing screen that has various
+criteria facilitating you to generate a list of transactions that have
+been entered into the system.
+
+You can send a request to the system to generate the report for all
+voucher types or a specific voucher type.
+
+The generated list may contain all vouchers for the above specification
+or a range of vouchers falling within a certain period or between two
+given periods
+
+You can also specify a listing of these vouchers based on being entered
+between a specific range of dates or even modified between a specific
+range of dates irrespective of entry dates. Various such criteria are
+available.
+
+As you will see on the screen you are also allowed to list these
+vouchers in various reporting currencies (if the multi currency option
+has been enabled) which means you can generate a listing of these
+vouchers entered in currency A but reported in currency B with
+appropriate reflection of conversion rates.
+
+In addition the selected report may also be printed in DOS mode or if
+require saved in a text file.
+
+If you are using multiple sites then you are also provided the option to
+view consolidated data for all the sites or a combination of sites or
+simply one site. Just select from the available options to view the
+results.
+
+[Trial Balance:]{.underline}
+
+As the title implies, this report prints the trial balance of a company.
+
+[Getting there;]{.underline}
+
+On the main menu screen go to the Reports menu and then select *Trial
+Balance*.
+
+This is one of the most useful reporting features that is available in
+the GL system. Other than providing various options/criteria to generate
+user requirements specific trial balances, the displayed report also has
+a drill down feature enabling you to track transactions right down to
+the individual voucher entry level.
+
+Click the option that takes you to the printing screen. Some of the
+options available to the user are discussed below for your convenience:
+
+>  Make your selections to restrict the
+> generated report to reflect only the Activity or the Opening Balances
+> or the Closing Balance or a combination all three.
+>
+>  Make your choice to print Accounts
+> that have balances without any transactions during the period or all
+> accounts with balances and transactions entered for the period(s).
+>
+>  Make your choice to include only
+> posted transactions or only unposted ones or if required print all
+>
+>  Choose to print only Debits or Credits columns or
+> both or even include a net (balance) figures of both these figures
+> including the option to skip printing of debit and credit figures and
+> just displaying the net accumulative.
+>
+>  Choose to print the trial balance
+> for the whole year, a number of years, a particular range of periods
+> or dates or even a daily trial balance!
+>
+>  Make your choice to print the trial
+> for the complete Chart of Accounts or just the Secondary Chart of
+> Accounts or skip the group levels to print only detail level accounts
+> for any given range of accounts or accounts
+
+Specify levels, which means specify the structure level (of your Chart
+of Accounts) for which you required the report. Choose to print for
+level 1 or level 2 or level 3 as per the structure defined for your COA.
+Upper levels automatically reflect lower level transactions and thus
+limit the size of the report by reflecting detailed transactions ingroup
+totals where group represents a level.
+
+>  Choose whether you want the report
+> to include or exclude yearend vouchers effects.
+>
+>  Choose to print row separators
+> between separate account codes to improve readability
+>
+>  Option of the group level accounts
+> is also available.
+>
+>  Print the report in any currency if
+> the multi-currency option is installed.
+>
+> Print report in Currency A for transactions entered in currency B
+>
+>  If required, type pf currency can
+> also be shown on the report by simply clicking on the check box.
+>
+>  Print the report in DOS mode or save
+> the output in a text file
+>
+>  Define cost centers.
+>
+>  Accounts can be sorted out according
+> to the code and the title.
+>
+>  Print for a range of sites or a
+> consolidated trial balance for all sites
+>
+>  Use the Like option to print
+> accounts matching a certain pattern. For example, to print accounts
+> which have the third and fourth characters as 47 simply enter two
+> underscores ('\_') then '47' followed by '%' sign (i.e.
+>
+> \_\_47%) in the account range specifications column
+
+Go to the displayed report and double click any account code to view the
+Ledger for that account code and in the ledger simply click to reach the
+voucher level of that entry.
+
+[Ledgers:]{.underline}
+
+As the title implies, this options displays the ledger for the Chart of
+Accounts.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select *Ledger*.
+
+Click the option that takes you to the printing screen, which has
+various criteria facilitating you to print the Ledger for any chart of
+account, secondary chart of account or range of accounts.
+
+>  If required then make your choice to
+> limit the number of records to by specifying the account range, the
+> parent a/c levels, the period range, cost centre, posting status, etc.
+>
+>  You are also given the choice print
+> only group level account codes.
+>
+>  Make your selection to print the
+> report in any desired reporting currencies provided the multi-currency
+> option is installed.
+>
+>  Make your choice to have each
+> account code on a separate page
+>
+>  If required specify to print even each cost centre
+> on a separate page
+>
+>  Use the drill down feature to view
+> the details of any entry by simply double clicking on the display to
+> take you to the original voucher.
+>
+>  If you wish to calculate the opening
+> balance, check the respective box and opening balance will be
+> calculated.
+>
+>  Moreover, the status, opening
+> /closing balance, project column, reference can also be shown by
+> checking the respective boxes.
+>
+>  Print for a range of sites or a
+> consolidated trial balance for all sites
+>
+>  Use the Like option to print
+> accounts matching a certain pattern. For example, to print accounts
+> which have the third and fourth characters as 47 simply enter two
+> underscores ('\_') then '47' followed by '%' sign (i.e. \_\_47%) in
+> the account range specifications column
+>
+>  For the purpose of discrete account
+> information, click on " discrete a/c" and the information will be
+> displayed along with the code and title of the account.
+
+[Age Analysis:]{.underline}
+
+As the title implies, this report lists an age analysis summary or
+details of transactions.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select *Age
+Analysis*.
+
+Click the option that takes you to the printing screen, which has
+various options to facilitate such as:
+
+>  Make your choice to print the report
+> only Receivables, Payables or only all Open items.
+>
+>  Specify a range of A/c codes for the
+> report
+>
+>  Choose to print each A/c code on
+> separate page.
+>
+>  Make your own combination of periods
+> (5 in all) encompassing the age analysis data
+>
+>  Make your choice to choose to print
+> in any available currency
+>
+>  Specify Minimum or Maximum or both
+> amounts to reflect only those receivables or payables that fall within
+> the specified range
+>
+>  Choose to print a 'Detailed' or
+> 'Summarized' report.
+>
+>  If you have opted to for the summary
+> then simply double click on any account code in it to view details.
+>
+>  Print for a range of sites or a
+> consolidated trial balance for all sites
+>
+>  Make a choice between 'As on basis'
+> and 'Future amounts'. The former lists transactions, which have been
+> knocked off whereas the latter excludes these from the display.
+
+[Withholding tax reports:]{.underline}
+
+As the title implies, this options contains various reports that are
+related to numerous withholding tax reports, many of them meeting
+specific standards meeting governmental requirements.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select
+*Withholding Tax Reports* that contains various sub-options discussed
+below:
+
+[Tax payment receipt setup:]{.underline}
+
+As the title implies, this options allows you to define and setup your
+*Tax Payment Receipt*.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select sub-menu
+item [Tax Payment Receipt]{.underline} within menu item Withholding Tax
+Reports.
+
+Click the option that takes you to the setup screen that has various
+criteria facilitating you to define your own printing specifications for
+the tax receipt. The screen contains various setup fields manipulating
+the options for which, allow you to define the format of the challan for
+subsequent printing on pre-printed stationery.
+
+Choose to include or exclude fields and place them on specific positions
+by using XY Coordinates.
+
+You can also adjust the Font size and width as according to your
+requirement.
+
+**Format...** Clicking this button will display another window where you
+can manually adjust the Tax Payment Receipt by using the mouse to drag
+and drop fields. In order to identify a field, simply click the right
+mouse button on an item to display a tool tip like help informing you
+about the nature of the field.
+
+[Tax payment receipt challan:]{.underline}
+
+As the title implies, this report print the [Tax Payment Receipt
+(Challan)]{.underline}
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select sub-menu
+item [Tax Payment Receipt (Challan)]{.underline} within menu item
+Withholding Tax Reports. The following options are available on the
+screen enabling you to further customize your report.
+
+-   **Cheque number:** Please enter the cheque number in this field.
+
+-   **Due date:** Enter the due date of the challan in this field.
+
+-   **Challan number:** Enter the challan number in this field.
+
+-   **WHT amount:** This field displays the deducted WHT amount.
+
+-   **Total amount:** This displays the total taxable amount.
+
+-   **Supplier:** This shows the supplier for whom the deduction has
+    been made.
+
+-   **Bank name:** Enter a valid bank name in this field to specify the
+    payment bank
+
+-   **Cheque No. to be issued:** Enter the number of the cheque to be
+    issued.
+
+-   **Tax date:** Enter the due date for depositing the tax.
+
+[Monthly statement 50 (4):]{.underline}
+
+As the title implies, this report prints the [Monthly Statement 50
+(4)]{.underline}.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select sub-menu
+item [Monthly Statement 50 (4)]{.underline} within menu item Withholding
+Tax Reports.
+
+Click the option that takes you to the printing screen, which has
+various criteria facilitating you to print the monthly Withholding Tax
+statement 50(4).
+
+You have options enabling you to print the report Supplier-wise or
+Date-wise report:
+
+-   Make a choice of options to print the report in Detailed or
+    Summarized form
+
+-   Make your choice of available currencies
+
+-   Print for a range of sites or a consolidated trial balance for all
+    sites
+
+-   Make your choice to include or exclude payee's name from the report.
+
+Print the report for a specific WHT type or a number of types.
+
+[Annual statement 143:]{.underline}
+
+As the title implies, this report prints [Annual Statement
+143]{.underline}.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select sub-menu
+item [Annual Statement 143]{.underline} within menu item Withholding Tax
+Reports.
+
+Click the option that takes you to the printing screen, which has
+various criteria facilitating you to print the desired report
+
+-   You are given the choice to print the annual Withholding Tax
+    statement 143 based on a number of criteria such as
+
+    -   Selected withholding tax type(s), o Selected currencies o
+        Specific date ranges
+
+    -   Print for a range of sites or a consolidated trial balance for
+        all sites o Make your choice to include or exclude payee's name
+        from the report.
+
+    -   Etc.
+
+[Annual statement 141:]{.underline}
+
+As the title implies, this report prints [Annual Statement
+141]{.underline}.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select sub-menu
+item [Annual Statement 141]{.underline} within menu item Withholding Tax
+Reports.
+
+Click the option that takes you to the printing screen, which has
+various criteria facilitating you to print the desired report
+
+-   You are given the choice to print the annual Withholding Tax
+    statement 141 based on a number of criteria such as
+
+    -   Selected withholding tax type(s), o Selected currencies o
+        Specific date ranges o Print for a range of sites or a
+        consolidated trial balance for all sites.
+
+Make your choice to include or exclude payee's name from the report.
+
+[Withholding tax report:]{.underline}
+
+As the title implies, this report prints the [Withholding Tax Report
+(WHT)]{.underline}.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select sub-menu
+item [Withholding Tax Report (WHT)]{.underline} within menu item
+Withholding Tax Reports. The following options are available in the
+report-printing screen.
+
+[Annual statement 142:]{.underline}
+
+As the title implies, this report prints the [Annual Statement
+142]{.underline}.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select sub-menu
+item [Annual Statement 142]{.underline} within menu item Withholding Tax
+Reports.
+
+Click the option that takes you to the printing screen, which has
+various criteria facilitating you to print the desired report
+
+-   Selected withholding tax type(s),
+
+-   Make your choice to print a summary or go ahead to print the
+    detailed report
+
+-   Specific date ranges
+
+-   Print for a range of sites or a consolidated trial balance for all
+    sites
+
+-   Make your choice to include or exclude payee printing.
+
+[Tax certificate setup:]{.underline}
+
+As the title implies, this report prints the [Tax
+Certificate]{.underline}.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select sub-menu
+item [Tax Certificate]{.underline} within menu item Withholding Tax
+Reports.
+
+Click the option that takes you to the printing screen, which has
+various criteria facilitating you to maintain and print user defined tax
+certificates aimed to meet your requirements. There are various
+available features, in the option, such as:
+
+-   You are allowed to enter the date and reference fields.
+
+-   Design the format of the body of the tax certificate to support
+    different formats of tax certificates which are in use
+
+-   Make use of macros that are available on the screen. Simply, click
+    on a macro to paste it at the cursor position in the body. The
+    selected macro will be available in print/preview mode.
+
+-   Clicking the preview button opens a selection window enabling you to
+    select the tax certificate, which you may wish to print. It further
+    facilitates you to print the certificate for o A range of suppliers
+
+    -   A specific date range
+
+You are also allowed to print consolidated data of all the sites.
+
+[Tax certificate 42:]{.underline}
+
+This report prints tax certificate 42.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select sub-menu
+item [Tax Certificate 42]{.underline} within menu item Withholding Tax
+Reports.
+
+Click the option that takes you to the printing screen, which has
+various criteria facilitating you to maintain and print user defined tax
+certificates aimed to meet your requirements. There are various
+available features, in the option, such as:
+
+-   You are allowed to enter the date and reference fields.
+
+-   Design the format of the body of the tax certificate to support
+    different formats of tax certificates, which are in use.
+
+-   Clicking the preview button opens a selection window enabling you to
+    select the tax certificate, which you may wish to print. It further
+    facilitates you to print the certificate for o A range of suppliers
+
+    -   A specific date range
+
+You are also allowed to print consolidated data of all the sites.
+
+[List of challans (due):]{.underline}
+
+The list of challans contains suppliers and customers information. On
+the main menu go to reports menu and then select the sub option of
+withholding tax report. You can use the drop down menu to select the
+code of the suppliers by clicking on the "range" button. This drop down
+menu contains more radio buttons like:
+
+-   Status
+
+-   Code
+
+-   Title
+
+[Statement 152:]{.underline}
+
+This tab prints the statement 152. Go to main menu and click on reports
+and then click on the sub-option withholding tax report, within this
+menu item, statement 152 is available. This statement has the following
+options:
+
+-   It contains the code and description of the withholding tax types.
+
+-   If required, date of payment can be printed
+
+-   The detail and summary of the report can be distinguished
+
+-   Currency of the report can be defined by using the drop down menu
+
+-   It has three check boxes, print payee, include zero withholding
+    transaction and consolidated data for sites.
+
+[Statement 153:]{.underline}
+
+This tab prints the statement 153. Go to main menu and click on reports
+and then click on the sub-option withholding tax report, within this
+menu item, statement 153 is available. This statement has the following
+options:
+
+-   It contains the code and description of the withholding tax types.
+
+-   If required, date of payment can be printed
+
+-   The detail and summary of the report can be distinguished
+
+-   Currency of the report can be defined by using the drop down menu
+
+-   It has three check boxes, print payee, include zero withholding
+    transaction and consolidated data for sites.
+
+-   The "column no 10"check box is available in this statement.
+
++---+---+-----------------------------------------------------------------+
+|   | * | > Similarly, statement 155 has the same options like statement  |
+|   | * | > 153                                                           |
+|   | N |                                                                 |
+|   | o |                                                                 |
+|   | t |                                                                 |
+|   | e |                                                                 |
+|   | * |                                                                 |
+|   | * |                                                                 |
++===+===+=================================================================+
+|   |   |                                                                 |
++---+---+-----------------------------------------------------------------+
+
+[Statement 233:]{.underline}
+
+The tab prints the statement 233. . Go to main menu and click on reports
+and then click on the sub-option withholding tax report, within this
+menu item, statement 233 is available. This statement has the following
+options:
+
+-   It contains the code and description of the withholding tax types
+    along with the payment type. The payment type is a drop down menu,
+    containing the types of the payment.
+
+-   It contains the code and description of the withholding tax types.
+
+-   If required, date of payment can be printed
+
+-   The detail and summary of the report can be distinguished
+
+-   Currency of the report can be defined by using the drop down menu
+
+-   It has three check boxes, print payee, include zero withholding
+    transaction and consolidated data for sites.
+
+-   The useable tax amount can be printed by clicking on the respective
+    check box
+
+[Statement 44(1):]{.underline}
+
+The tab prints the statement 44 (1). Go to main menu and click on
+reports and then click on the sub-option withholding tax report, within
+this menu item, statement 44 (1) is available. This statement has the
+following options:
+
+-   It contains the code and description of the withholding tax types
+    along with the payment type. The payment type is a drop down menu,
+    containing the types of the payment.
+
+-   It contains the code and description of the withholding tax types.
+
+-   If required, date of payment can be printed
+
+-   The detail and summary of the report can be distinguished
+
+-   Currency of the report can be defined by using the drop down menu
+
+-   It has three check boxes, print payee, include zero withholding
+    transaction and consolidated data for sites.
+
+-   If required, date can be sorted out by clicking on the check box,
+    given on the screen
+
+[Statement 44 (2):]{.underline}
+
+The tab prints the statement 44 (1). Go to main menu and click on
+reports and then click on the sub-option withholding tax report, within
+this menu item, statement 44 (1) is available. This statement has the
+following options:
+
+-   It contains the code and description of the withholding tax types
+    along with the payment type. The payment type is a drop down menu,
+    containing the types of the payment.
+
+-   It contains the code and description of the withholding tax types.
+
+-   If required, date of payment can be printed
+
+-   The date wise detail of the report can also be printed by simply
+    clicking on the given option
+
+-   Currency of the report can be defined by using the drop down menu
+
+-   It has two check boxes, print payee and consolidated data for sites.
+
+[Statement 44 (2) summary:]{.underline}
+
+The tab prints the statement 44 (2) summary. Go to main menu and click
+on reports and then click on the sub-option withholding tax report,
+within this menu item, statement 44 (2) summary is available. This
+statement has the following options:
+
+-   It contains the withholding tax types along with the temporary tax
+    entries. The withholding type is a drop down menu, containing the
+    withholding tax types
+
+-   If required, date of payment can be printed.
+
+-   Currency of the report can be defined by using the drop down menu.
+
+-   It has two check boxes, print payee and consolidated data for sites.
+
+[Temporary tax report setup:]{.underline}
+
+This setup contains the temporary description of the report. You can
+enter the details as required. The save, delete, preview, add etc
+buttons are also accessible.
+
+[Party wise Report:]{.underline}
+
+As the title implies, this options displays the [Party Wise Activity
+Report]{.underline}.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select [Party
+Wise]{.underline}
+
+[Activity Report]{.underline}.
+
+Click the option that takes you to the printing screen, which has
+various criteria facilitating you to print the desired report. Criteria
+available includes the option to
+
+-   Selected a range or parties, o Select currencies o Specific date
+    ranges o Print detailed or a summarized report
+
+-   Print for a range of sites or a consolidated trial balance for all
+    sites o Make your choice to include or exclude payee's name from the
+    report.
+
+[Cash bank/book:]{.underline}
+
+As the title implies, this options report prints the Cash[/Bank
+Book]{.underline}
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select
+[Cash/Bank Book]{.underline}.
+
+Click the option that takes you to the printing screen, which has
+various criteria facilitating you to print the desired report. There are
+various criteria available, such as:
+
+-   Define to print the Cash/Bank Book for specific or all Bank Accounts
+    (as defined in COA).
+
+-   Choose to print for a given range of dates
+
+-   Choose to print for a particular type of vouchers
+
+-   Specify whether to include or exclude posted or unposted vouchers
+
+-   View opening balances for the given range of dates
+
+-   View date-wise receipts and payments (with daily closing balances)
+
+If required view a consolidated report of all the sites.
+
+[Cash bank/Position:]{.underline}
+
+As the title implies, this options report prints the Cash[/Bank
+position]{.underline} [Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select
+[Cash/Bank]{.underline} [Position]{.underline}
+
+Click the option that takes you to the printing screen, which has
+various criteria facilitating you to print the desired report. There are
+various criteria available, such as:
+
+-   Define to print the Cash/Bank Position for specific or all Bank
+    Accounts (as defined in COA).
+
+-   Choose to print for a given range of dates
+
+-   Choose to print for a particular type of vouchers
+
+-   Specify whether to include or exclude posted or unposted vouchers
+
+-   Specify the footer description
+
+If required view a consolidated report of all the sites.
+
+[Budget report:]{.underline}
+
+As the title implies, this report prints a [Budget Report]{.underline}.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select [Budget
+Report]{.underline}.
+
+Click the option that takes you to the printing screen, which has
+various criteria facilitating you to print the desired report. This is
+basically a budget variance report, which has various options such as:
+
+-   Make your choice to select the columns (at least two) which are to
+    be included in the report. Simply ticking the appropriate options
+    contained within the 'Select Report' group box. Please remember to
+    de-select all of them if you want to override the default selection
+    to make your own sequence.
+
+-   Make your choice for the report to display variance. Please note
+    that variance is reported only between the last two selected
+    columns, which you choose above in the "Select Report" group box.
+
+-   Make your choice to generate the Budget Report for
+
+-   A selected account range,
+
+-   Specific cost centers
+
+-   A range of periods
+
+-   For a specific nature or level of account codes.
+
+If required view a consolidated report of all the sites.
+
+[Project wise report:]{.underline}
+
+As the title implies, this report prints a comprehensive [Project wise
+report.]{.underline}
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select [Project
+wise]{.underline} [Report]{.underline}.
+
+Click the option that takes you to the printing screen, which has
+various criteria facilitating you to print the desired report. Criteria
+available include:
+
+-   The option to print the desired report for a range of project wise
+    report
+
+-   Options to print these report according to the defined levels
+
+-   Make your choice to print the report for a specific type of account
+    code(s) or all based on the programs installation.
+
+-   Make your choice to print the report for a particular account
+
+-   Make your choice to print the report for Group Levels only
+
+-   Make your choice of currency.
+
+-   Make your choice of with budget or without budget report.
+
+> If required view a consolidated report of all the sites.
+
+There are various other reports that are available in the system and may
+be printed using various available options. These reports are:
+
+-   **Knock off tracking report**
+
+-   **List of unused vouchers**
+
+-   **List of cheques** • **Cash flow statement**

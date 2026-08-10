@@ -1,0 +1,35 @@
+SPI General Ledger (GL) Module — SELECT
+Source: Sidat Hyder Financials Software Guide
+
+### Select 
+
+[Adding information]{.underline}
+
+>  **Site:** This module will display
+> the options for changing site that is, current and working site. The
+> current site can generate new entry while the working site can only be
+> used for modifications.
+
+-   **Range of sites**: the "site" module gives further options for the
+    range of sites, the range can be defined for example, from head
+    office to Lahore. The range will also be displayed on the report.
+
+-   **Other sites**: this sub-module gives three options knock off,
+    cheque payment and bank reconciliation. By checking each of the
+    boxes, parameters can be set for the report module.
+
+>  **Year**: by clicking on this option the current
+> year can be changed to the new year.
+>
+>  **Period:** similarly, if you wish to
+> change the current period, go to "period" and change the current
+> period to new one.
+
+There are five applications running on "Sidat Hyder Financials" which
+are:
+
+### • General ledger • Fixed assets • Purchase • Sales • Inventory 
+
+If you want to switch over to another application, just click on one of
+the applications mentioned above and the application will change in a
+few seconds.

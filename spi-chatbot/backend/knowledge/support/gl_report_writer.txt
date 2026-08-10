@@ -1,0 +1,83 @@
+SPI General Ledger (GL) Module — REPORT WRITER
+Source: Sidat Hyder Financials Software Guide
+
+### Report writer 
+
+A comprehensive report writer is an integral part of Sidat Hyder
+Financials. This allows the user to define single or two-dimensional
+reports to meet specific reporting requirements (like income statement,
+balance sheet etc.). The startup screen allows the user to create new
+reports by clicking on the new button. The system will ask for the
+number of rows and columns, the report will consist of. Please provide
+an appropriate estimate (which will be modifiable at a later stage). By
+clicking on the Resize button, user can also increase the rows and
+columns. You can make a copy of selected report by clicking the Copy
+button.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Report Writer menu.
+
+The edit button displays another screen, containing the report format
+and report parameters, which are used for writing and formatting the
+reports setup.
+
+**Report format** contains the code, name and titles of the report. By
+right clicking on the title bar, list of macros will be displayed which
+can be used for entering more details as required.
+
+**Report parameters** enlist the company's name, data type, cost center
+and various other options like data entered, show report, site range and
+analysis tabs.
+
+There are more options available which help in formatting the report
+setup like underline, italic, bold, delete column or row, add column or
+row, print, save, clear cell and scan etc.
+
+[Financial statements:]{.underline}
+
+Go the to the main menu, click on report writer and then click on the
+financial statements, this is the last menu item of Sidat Hyder
+Financials. Financial statements entail the following:
+
+-   Notes setup
+
+-   Total setup
+
+-   Report setup
+
+-   Financial report
+
+[Notes setup:]{.underline}
+
+Notes setup contains the note details along with the General, Analysis
+and Note detail tabs.
+
+[Total setup:]{.underline}
+
+Total setup helps you calculating the grand total along with the code,
+description and the title.
+
+[Report setup:]{.underline}
+
+Report setup has two tabs, General and Report detail.
+
+**General** tab contains the option to enter code, description, and
+title of the report. Furthermore, it gives you the option of Print
+Criteria that only prints the ranges, which have been selected
+
+**Report detail** gives you the option of code, description along with
+the Print note no and Print sequence. There are more options available
+that can be entered in the report setup for final printing like Upto
+values, Company logo, and Company logo on right side, last year values
+and System date/time. The type of report can be selected by using the
+drop down menu, containing the types of report like note, text and
+total.
+
+[Financial Report:]{.underline}
+
+Go to the main menu, click on the Report writer, within this menu item,
+click on the "Financial report" for the final printing of the report. If
+you wish to print notes, click on the "**notes**" and enter the various
+other options like transactions, date entered, code, description, if
+required.

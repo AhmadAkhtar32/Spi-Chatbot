@@ -1,0 +1,505 @@
+SPI General Ledger (GL) Module — VOUCHERS
+Source: Sidat Hyder Financials Software Guide
+
+### Vouchers 
+
+Clicking this option displays a list of all voucher types that have been
+defined in the system. This list is displayed on the left hand side of
+the screen. Clicking any type will display a list of all vouchers that
+have been entered for the selected period, pertaining to the particular
+voucher type. The user may now create, edit, delete and print these
+vouchers. It is to be noted that the system does not allow the user to
+create system generated voucher types that are defined at the time of
+installation. These include sales voucher, purchase voucher, cheque
+payment voucher etc.
+
+>  **Enter voucher:** There are
+> multiple tabs on the voucher entry screen. It should be remembered
+> that the first tab is the actual voucher entry tab in which voucher
+> details are entered into the system. The rest of the tabs simply
+> reflect the entered voucher in respective reporting currencies, if the
+> multi-currency option has been activated. The default exchange rates
+> of these reporting currencies are picked from period-wise exchange
+> rate setup and are available for editing if the user wishes so. A
+> change in this rate is reflected in an automatic calculation of the
+> item's amount or vice versa. Please also note that before you attempt
+> to save the voucher; please ensure that it has been balanced on all
+> tabs.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Voucher menu and then select Enter
+Vouchers, which will display the option that is discussed below. The
+following fields are available on the Vouchers data entry screen.
+
+[Adding information to "Enter Voucher":]{.underline}
+
+>  **Voucher type:** Shows the type of
+> voucher that is being entered or edited.
+>
+>  **Voucher No:** Displays the voucher number that is
+> automatically generated or entered by the user, as per the criteria
+> defined for it, which has been discussed in voucher type setup.
+>
+>  **Narration:** The user is required
+> to enter the narration of the voucher in this field. Alphanumeric
+> entries are allowed.
+>
+>  **Date:** The voucher date is entered
+> here. Please note that the system will not accept any dates, which
+> fall outside the Date range specified for the current period.
+>
+>  **Auto reverse:** Checking this option results in
+> the creation of a reversal voucher in the next period on period end.
+>
+>  **Account code:** Double click to
+> choose or simply type in the account code for each transaction. Each
+> line is a separate transaction within the voucher and each voucher may
+> contain multiple transactions as many as are required.
+>
+>  **Account title:** The title of the
+> ledger account is displayed here. For the sake of convenience, the
+> user may wish to skip entries in the account code column and simply
+> type in the title of a valid ledger account. Doing so, results in
+> automatically displayed the related account head in the account code
+> column.
+>
+>  **Transaction description:** Please
+> type in the description of the transaction in this field.
+>
+>  **Trans currency:** If multi-currency
+> is being used, please choose the currency in which the transaction is
+> being entered.
+>
+>  **Debit/Credit:** Please enter the
+> debit or credit entry amount in these columns. Obviously, only one of
+> these columns may be filled with a value.
+>
+>  **Reference:** This is a simply
+> alphanumeric field that is used for referral purposes to the
+> transaction, e.g. the cheque number.
+>
+>  **Party:** If parties have been
+> defined in setup entries, then a list of parties is displayed here and
+> the user may choose the party to whom the particular transaction needs
+> to be linked with in order to later generate party wise analysis
+> reports.
+>
+>  **Cost centre:** If cost centers are
+> being used then choose a valid cost center.
+>
+>  **Quantity:** If required, please
+> enter the quantity for the in this field.
+>
+>  **Reference fields:** Similar to the
+> reference fields above, these are three additional reference fields,
+> which can be used to enter any optional data restricted to 25
+> characters. Please note that these are available only if reference
+> fields have been selected during installation setup.
+>
+>  **Save as default:** The system
+> allows the user to define various standard vouchers by saving them as
+> default vouchers. These may come in handy especially so for vouchers
+> that may be required to be entered repeatedly, depending on the
+> requirements of the company. An example may be a salary voucher. Thus,
+> the currently being entered voucher can be saved as a default voucher
+> by clicking this button and may be later recalled, as many times as
+> wished, and saved after making any required changes, for example the
+> date, amount etc. At the time of saving the default voucher you are
+> given the option to either save the Dr/Cr amounts or a percentage
+> distribution. In the latter case you are required to enter a figure of
+> 1.00 or less in the debit/credit columns. Both these figures must
+> total to 1.00. Doing this results in the system prompting you to enter
+> an amount (when this default voucher is called to create an actual
+> voucher) and which is then distributed in the debit/credit columns as
+> per the percentage defined earlier.
+>
+>  **Add:** Click this button to add a
+> new transaction.
+>
+>  **Insert:** Click this button to
+> insert a transaction between to existing transactions.
+>
+>  **Delete:** Click this button to
+> delete the currently selected transaction.
+>
+>  **Print:** By clicking on this
+> option a "print" screen will appear, containing check boxes. This
+> screen has following tags:
+
+-   Range
+
+-   Print voucher in
+
+-   Level
+
+-   Group level A/C etc
+
+>  **Default:** Clicking this button
+> displays the default account code, which is defined in the voucher
+> type setup.
+>
+>  **Balance voucher:** Click this button to
+> automatically balance the voucher. The balancing debit or credit
+> amount will be automatically adjusted in the currently selected
+> transaction. Please note that the balance voucher buttons works only
+> for the current screen, i.e. it does not balance other screens used
+> for reporting currencies and which must be separately balanced,
+> manually or via this button which may used after going to the relative
+> screens.
+>
+>  **Default voucher:** Click this
+> button to show a list of default vouchers. This screen has two more
+> options "generic" and "current voucher type". By clicking on "generic"
+> the whole list of vouchers will be displayed. The "current voucher
+> type" displays the details of the "current" voucher.
+
+>  **Function keys:** Click this button
+> to display a list of available function keys and their relative usage
+> that has been discussed in the voucher setup and may be referred to,
+> if required.
+
+[Copy Voucher:]{.underline}
+
+This facilitates the user to copy various voucher types or actual
+vouchers from on to another including from one company to another
+company. Options are provided to change the target period and the status
+(i.e. posted or un-posted).
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Voucher menu and then select copy
+Vouchers, which will display the option that is discussed below. The
+user is firstly required to select a voucher (or multiple vouchers) and
+click the copy button, which brings up another screen with the following
+fields that are discussed below:
+
+>  **Company:** In case you want to
+> copy the voucher or type from one company to another please select the
+> target company in this field. This is available only if multiple
+> companies are being used in the system.
+>
+>  **Voucher type:** If you want to
+> change the voucher type of the target voucher from the source voucher
+> then select the required type via this field.
+>
+>  **Voucher no:** Enter the voucher
+> number of the target voucher in this field. Please note that this is
+> enabled only if a single voucher is to be copied. If multiple vouchers
+> are being copied then this field is disabled and voucher numbers of
+> the source are copied onto the target.
+>
+>  **Period:** Please select the period
+> for the target voucher.
+>
+>  **Status:** Please select the status
+> of the target voucher, i.e. define whether the target voucher needs to
+> be created as posted or un-posted).
+>
+>  **Auto-generate:** This is available
+> only in case a single voucher is being copied from source to target.
+> Checking the option enables a new voucher number to be automatically
+> generated following the last voucher number in the target sequence.
+>
+>  **Copy:** If you want to copy a
+> voucher of a specific period, click on "copy", a "**copy** **vouchers
+> to**" window will appear which has the following options:
+
+-   Company
+
+-   Voucher type
+
+-   Voucher no
+
+-   Period
+
+-   Posted
+
+-   Verified
+
+-   Auto generate
+
+### Cheque Payment-Others 
+
+This cheque payment relates to "Others", i.e. payments that are being
+recorded against transactions not recorded as regular purchases (against
+which bills have been raised) in the GL system.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Voucher menu and then select Cheque
+Payment-Others, which will display the option that is discussed below.
+Clicking this option opens up a window showing a list of purchase
+vouchers related to the selected supplier. This tab page is used to
+consolidate information related to the payment cheque being issued,
+against the purchase. The options contained within each tab are
+explained below:
+
+[Adding Information "Cheque Information Tab":]{.underline}
+
+>  **Voucher type:** Please choose the
+> type of voucher that is to be created against the cheque.
+>
+>  **Voucher no:** Please enter the voucher number in
+> this field.
+>
+>  **Date:** Please enter the voucher
+> date in this field that must reconcile with the date against which the
+> payment is to be made.
+>
+>  **Currency:** If the multi-currency
+> option is being used then select the payment currency via this option.
+>
+>  **Narration:** Please type in the
+> narration of the voucher in this field.
+>
+>  **Bank A/c code:** Type in or choose
+> from the available pick list a valid bank name through which the
+> payment is to be made.
+>
+>  **Cheque number:** Enter the number of the cheque
+> in this field. This is also automatically displayed following the
+> sequence of the last used cheque number, however an option is provided
+> enabling the user to overwrite the default value.
+>
+>  **Party:** Choose the party related
+> to this bank transaction.
+>
+>  **Project:** Choose the project to
+> be used for this bank transaction.
+>
+>  **Narration:** Enter the narration,
+> of the bank transaction, to be recorded in the voucher.
+>
+>  **Debit account:** This is the GL
+> ledger account that is to be debited via the transaction, e.g. the
+> supplier's account. If this selected account code refers to a
+> 'payable' then the option to activate the deduction of 'Withholding
+> Tax' will be enabled. This option is controlled by the check box
+> visible on the screen, which is enabled only in case the account
+> belongs to the payable category/type.
+>
+>  **Payee:** This field represents the
+> name of the payee.
+>
+>  **Debit amount:** This is the amount
+> that is to be debited. Please note that the amount reconciles with the
+> sum of the Knockoff amount(s) of the bill(s) that are displayed on the
+> Bills information tab. Tax is also deducted according to the taxable
+> amounts specified in the bill(s).
+>
+>  **Party:** Please choose the payee
+> party in the transaction.
+>
+>  **Project:** Please choose the
+> project for the payee transaction.
+
+ **Narration:** Please enter a valid
+narration for recording the payee transaction.
+
+>  **Withholding tax:** If the debit
+> account relates to a payable and the subsequently the withholding tax
+> option has been activated then the WHT credit account needs to be
+> provided here.
+
+[Adding Information "Withholding Tax Tab":]{.underline}
+
+This tab contains information pertaining to Withholding Tax details.
+
+>  **Tax credit account:** This is the
+> account to which the WHT credit account number.
+>
+>  **Narration:** The narration of the
+> WHT transaction.
+>
+>  **Party:** The party to which the WHT
+> needs to be credited.
+>
+>  **Project:** Please choose the
+> project that needs to be credited with the WHT entry.
+>
+>  **Round decimals in WHT:** Please
+> check this option if you wish to round off the cheque and withholding
+> tax amounts.
+>
+>  **Analysis 1-5:** Enter the options
+> for analysis 1-5.
+
++---+---+-----------------------------------------------------------------+
+|   | * | > The columns represent the details required for the            |
+|   | * | > withholding tax                                               |
+|   | N |                                                                 |
+|   | o |                                                                 |
+|   | t |                                                                 |
+|   | e |                                                                 |
+|   | * |                                                                 |
+|   | * |                                                                 |
++===+===+=================================================================+
+|   |   |                                                                 |
++---+---+-----------------------------------------------------------------+
+
+[Adding Information "Analysis Tab":]{.underline}
+
+The analysis tab contains the banks and payees details. Click on this
+tab and select the respective option for example, "option 1 of analysis
+1".
+
+[Adding Information "Reference Tab":]{.underline}
+
+This tab page contains various alphanumeric fields that may be entered
+by the user as per the specifics of the requirement. This information is
+generally stored for reference purposes as implied by the title of the
+page. Examples of such fields are invoice no., invoice date,
+P.O.Reference, GRN reference.
+
+[Adding Information "Knockoff Tab":]{.underline}
+
+If the cheque payment is being made with reference to transactions that
+have been recorded in the GL through entered vouchers then as per
+selection, all the outstanding transactions, which have yet not been set
+off, of the debit account code are displayed here. Selecting debit and
+credit transactions displays the difference of the selected transactions
+that is then paid vide this cheque. Please note that only credit
+difference are treated as valid cheque payment amounts. Payment can be
+partial or full with selected transactions being knocked off against
+each other. If no debit or credit transactions are chosen for knocking
+off and the cheque amount is manually entered then the amount shall be
+treated as an advance to the particular ledger account.
+
+[Adding Information "Exchange Rates Tab":]{.underline}
+
+Use this tab to define the exchange rates of the reporting currencies,
+if reporting currencies (a maximum of 5) have been defined through the
+foreign currencies setup option. Incase of foreign currencies not having
+been defined the tab simply shows 'Not Defined' as its title.
+
+### Cheque Printing Setup 
+
+This option facilitates the user to define various setup's related to
+the type of cheques that may required to be printed from the system.
+Thus via this option the user may define various standard cheque
+printing setup's where each setup may relate to the cheque printing
+setup of a particular bank.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Voucher menu and then select Cheque
+Payment Setup, which opens up a window containing various options.
+
+The user is allowed to define the format of the cheque in order for it
+to be printable on pre-printed stationery. Various items such as bank
+code, amount, date etc. can be printed at specific positions using XY
+Coordinates. Information that may be printed on the cheque is
+distributed into two group, the first set of information such cheque
+number, net amount, amount in words etc. is printed on the first half
+section of the leaf/page whereas the second half contains and prints
+information related to the bill(s), such as Bill No., withholding tax
+deducted etc., against which the payment is being made. Moreover, this
+setup gives you the option of "cheque printing setup preview", by
+clicking on the format button, a preview screen will be displayed.
+
+[Cheque Printing:]{.underline}
+
+As the name of the option implies, this menu item is to be used for
+actual cheque printing that needs to be done through the system.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Voucher menu and then select the
+sub-menu item Cheque Printing within the menu item Cheque payment.
+
+Clicking the option opens up a window that displays cheques, for the
+current period, which have been created so far. You are now simply
+required to select any cheque and proceed on printing following the
+online instructions. Furthermore, by clicking on "advice print" a small
+screen will be displayed which gives two options, "voucher based" and
+"entered by user", select your option and click OK. The cheque will be
+printed according to the selected option.
+
+> [Revise Payment:]{.underline}
+
+As the name of the option implies, *Revise payment* is done to rectify
+any accounting errors, which may have occurred resulting from incorrect
+cheque payments.
+
+[Getting there:]{.underline}
+
+A list of all unverified issued cheques are displayed on the screen. The
+user is now simply required to select and process any cheque for which
+payment needs to be revised. The option may also be used to individually
+view any transactions pertaining to the cheque. Searching through the
+records that list these transactions does this.
+
+[Bank Reconciliation:]{.underline}
+
+As the name implies this option facilitates the user to match bank
+statement(s) with the ledger accounts of the bank(s) that is (are)
+maintained in the system.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Voucher menu and then select Bank
+
+Reconciliation.
+
+Accessing the option displays a list of all bank accounts on the screen.
+Options on the screen allow the user to filter data related to these
+banks on the basis of year and currency. Clicking the 'Process' button
+after making appropriate selections lists all the transactions,
+pertaining to the bank account and which may now be matched with the
+Bank Statement, for the sake of reconciliation. Ticking the check box
+next to a transaction marks it as reconciled. The 'Reverse' button may
+be used to revise the process. Resultantly, a report is available in the
+system, which lists all transactions that have yet not been reconciled.
+
+[Knock Off:]{.underline}
+
+As the title of the option implies, this facility provides the GL user
+to knock off debit and credit transactions for those account codes,
+which have been marked as open items.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Voucher menu and then select Knock
+Off.
+
+The screen displays a list of all account codes that have been marked
+'Open Item' during the ledger account creation process through the Chart
+of Account menu. Click the desired account code on which you need to
+apply the knock off process. If multi currency option is being used then
+you are also given an option to select the currency you may wish to work
+on. After selecting the account code you are now required to click the
+process button, which displays the debit and credit transaction for the
+selected account code. After the above you may proceed via any of the
+following options, which are made available to the user.
+
+[Knock Off Process:]{.underline}
+
+Select the debit and credit transactions that you need to knock off.
+These transactions are displayed in two parallel windows.
+
+>  **Process:** Click the process
+> button to knock off the selected transactions, which completes the
+> process.
+
+[Reverse/Knock off reverse:]{.underline}
+
+Use this button to reverse the above knocking off process. The option
+reverses all knocked off entries but is limited to the current session
+only. Thus will reverse the knock off effect for only those entries that
+were knocked off during the current process, via clicking the above
+discussed process button. Clicking the *Reverse* button opens another
+window that displays all the knocked off transactions for the selected
+account code. You are now required to select the transactions for which
+you wish to reverse the knock off effect.
+
+>  **Reverse:** After selecting the
+> required transactions, please click the reverse button to reverse the
+> knock off effect and subsequently the selected transaction disappear
+> from the window.
+>
+>  **Delete:** Use this button if you
+> wish to permanently delete the selected transactions. Please note that
+> the action cannot be reversed and thus the deletion process
+> permanently marks the selected entries as deleted and which cannot be
+> restored.

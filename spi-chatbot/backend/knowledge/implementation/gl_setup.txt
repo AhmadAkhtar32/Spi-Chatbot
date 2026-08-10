@@ -1,0 +1,682 @@
+SPI General Ledger (GL) Module — SETUP
+Source: Sidat Hyder Financials Software Guide
+
+### Chart of Accounts Setup 
+
+On the main menu screen go to the setup menu and then select Chart of
+Accounts. This will further display three options Maintain, Copy and
+Copy chart of Account (company). Each of these is discussed in the
+following pages.
+
+The Chart of Accounts setup screen that you are looking at allows you to
+enter a variety of information regarding your Chart of Accounts. I will
+start from the basics, the **Maintain** menu.
+
+The Chart of Accounts setup screen is partitioned into three core areas
+of functionality for your ease of use.
+
+Firstly, a list of account heads entered in the system is displayed in
+the left corner of the screen. It contains the code and the title of
+account. A search facility is also provided, at the bottom left corner,
+which could be invoked using code or title as the primary search
+criteria.
+
+Secondly, the usual "system functions area" where you have the function
+buttons such as "New," "Edit" etc. are displayed at the bottom of the
+screen.
+
+Thirdly, on the right side of your Chart of Accounts setup screen,
+details pertaining to the account heads displayed in the list are shown.
+These details are briefly discussed below:
+
+### Maintain 
+
+[Adding information:]{.underline}
+
+>  **Account Code**: New account codes
+> are entered here. The structure of the account codes entry will be
+> based on the chart of accounts structure defined earlier at the time
+> of installation. Please note that if an already existent account code
+> needs to be modified then you should click the Edit button after
+> selecting an existing account code from the pick list on the left hand
+> side of the screen.
+>
+>  **Generate next:** It generates the
+> next account code in the series with the same specifications, which
+> the previous one has.
+>
+>  **Title:** The account title is
+> entered here.
+>
+>  **Type:** These are radio buttons,
+> which allow the user to define whether; the selected ledger account
+> refers to a Group of accounts or is a detailed ledger account. This
+> identification is referred to as the Account Type. Subsequently,
+> 'group' accounts can have several detailed accounts within them
+> whereas a 'detailed' level ledger account is considered to be lowest
+> level in the hierarchy of the group and in which actual transactions
+> are recorded. These detailed level transactions are then reflected in
+> their groups. It is to be noted that depending on the structure of the
+> COA, there may be several sub-groups within a group and the lowest
+> level should be the detailed level.
+>
+>  **Budget level:** The system caters
+> for the need to enter budgets amounts for the ledger accounts defined
+> in the COA setup. These budget amounts may be entered at the group or
+> detailed level. This level of budget entry is defined here. It should
+> be noted that defining the budget level is not mandatory for each and
+> every ledger account being setup in the system and if no budget level
+> is entered then the budget level specified at the time of installation
+> is taken as the default level. In addition the facility to modify a
+> previously defined budget level is also available. If budget entry
+> level is 0 at the highest group level then subsequent levels can have
+> different budget entry levels.
+>
+>  **Nature:** This group of radio
+> buttons allows a user to define the core category referred to as the
+> nature of the ledger account. There are two groups of radio buttons
+> that are available for manipulated selection. The first group allows
+> the user to categorize the ledger account as an Asset, Liability,
+> Equity, and Income, Expense or None. Please note that none can be
+> defined only for 'group' level account codes. The sub-level account
+> codes under none can be of any nature. The second group of radio
+> buttons signifies whether the account is a Normal account, a
+> receivable account a payable account a Bank Account. All accounts
+> should be defined as Normal except those, which are to be used for
+> customers, suppliers or bank accounts.
+>
+>  **Open Item:** This check box is
+> enabled for selection only for detail level account codes. Any
+> detailed level ledger account code may be defined as an Open Item.
+> Please note that adherence to accounting standards calls for all A/c
+> Receivable and A/c Payable type accounts to be marked as Open Item and
+> which is done so automatically via the system.
+>
+>  **Credit days:** A numerical entry
+> is made here to define the Credit Days limit for Open Item account
+> heads.
+>
+>  **Allow quantity:** This check box
+> allows the user to define whether the voucher entry generated for the
+> selected ledger account should allow quantitative input or not. Thus
+> checking this option displays an enabled quantity column during
+> voucher entry and in which the user may enter a valid numerical value.
+> It is to be noted that this option can only be checked for detail type
+> account codes.
+>
+>  **Allow F.C. translation:** This is
+> also available only for detail type account codes. These account codes
+> are used in foreign currency gain/loss calculation and voucher
+> generation.
+>
+>  **Link with:** this option is used
+> to link the sales, purchase, inventory to the customers and suppliers.
+> It has three sub options none, customers and suppliers.
+>
+>  **Relation with notes:** if you
+> require linking the account code with the notes, click on this option
+> and the account code will be linked to the multiple notes.
+>
+>  **Active:** The check box allows the
+> user to mark a ledger account as active or vice versa. The default
+> value, for all new accounts that are setup in the system, is set to
+> active. If a group level account code is marked as inactive then all
+> sublevel account codes are automatically marked as inactive and data
+> entry against inactive account code is not allowed.
+>
+>  **Relation with Secondary COA
+> button:** This option facilitates the user define relationships
+> between the primary and the secondary chart of accounts (if defined)
+> for a company. Subsequently, consolidated reports (like Trial and
+> Ledger etc.) are generated. In order to invoke the facility, the user
+> is required to select the secondary chart of account from the drop
+> down list and then enter the account code of the selected secondary
+> chart of account against the ledger account. Please note that this
+> option is also available only for detailed level account codes.
+
+### Copy 
+
+Selecting this item from the menu list displays a dialog box with
+containing various fields, which are used to copy a series of
+sub-accounts to another group account. Each of these fields is explained
+below:
+
+[Adding information:]{.underline}
+
+>  **Source account:** The source
+> account code is the account group whose subaccounts are to be copied.
+>
+>  **Target account:** This is the
+> target group account code where the source accounts identified above
+> are to be copied. It is to be noted that the source and the target
+> account code must be similar in type and structure.
+>
+>  **Description:** The description for
+> the accounts is displayed here.
+
+**Copy Chart of Account (Company):**
+
+This option allows the user to copy a complete Chart of account defined
+for a company for another company. The option is available only if
+multiple companies are to be operated from the GL package. One or more
+companies can be selected as target companies. It is to be noted that
+the option will not work if the target company has transaction related
+to its existing chart of accounts.
+
+[Cost centre:]{.underline}
+
+The name "cost centre" is defined at the time of installation (you can
+name it whatever you want to), and this option is available if you have
+purchased the General Ledger as well and both the systems are
+integrated.
+
+[Getting there:]{.underline} On the main menu screen go to the setup
+menu and then select cost centre. This will display the cost centre
+setup screen we will be talking about here. A list of cost centres
+entered in the system is displayed in the left corner of the screen. It
+contains the code and its description. Another option of "relation with
+notes" is also available.
+
+[Adding information to the "cost centre setup":]{.underline}
+
+You will find the cursor in the first field titled "code." You can now
+proceed with the desired entry by either clicking on each field you want
+to enter data to or by simply pressing the tab. Another option of
+"relation with notes" is also available which can be used to link the
+account code with multiple notes.
+
++---+---+-----------------------------------------------------------------+
+|   | * | > You can either define a cost centre in the "group" or         |
+|   | * | > "detail" category. However, if you define it as a group then  |
+|   | N | > you will need to define the whole hierarchy until you reach   |
+|   | o | > the detail level, and on the other hand, if you define it as  |
+|   | t | > detail then all entries could be made against it. In          |
+|   | e | > addition, you can also define a cost centre for all companies |
+|   | * | > or you can associate it with a particular company. If you are |
+|   | * | > working in a particular group level then you can auto         |
+|   |   | > generate the code by clicking the "Gen-next" button           |
+|   |   | >                                                               |
+|   |   | > Other system features will work in the same manner e.g.       |
+|   |   | > delete, preview etc.                                          |
++===+===+=================================================================+
+|   |   |                                                                 |
++---+---+-----------------------------------------------------------------+
+
+### Analysis setup 
+
+On the main menu, go to setup and click on " analysis" to get access to
+the analysis window. There are five levels of analysis and each tab
+allows you to enter code and description. Moreover, radio buttons like
+save, close, help, delete, import, export etc are also available.
+
+### Companies' setup 
+
+On the main menu, go to setup and click on the "companies" option.
+
+This tag will allow you to fill in the complete information of all the
+companies that you want to enter. The general information allows you to
+enter company's name, code, address, contact details, ISO, national tax
+number etc. Furthermore the options for FC gain loss A/C, delivery
+locations are also available. The tags for website address and e-mail
+address are accessible in the "Others" option.
+
+### Voucher types setup 
+
+The system allows the user to define standard voucher types that are to
+be used in the GL system. Through this option the user may create these
+voucher types and later edit or delete the same. The system allows the
+user to define as many voucher types as may be required. The option is
+explained in the following pages.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the setup menu and then select Voucher
+Type.
+
+[Adding information:]{.underline}
+
+>  **Code:** Each voucher type is
+> assigned a unique code in the system, which acts as the identifier for
+> the type. This column displays the voucher code.
+>
+>  **Description:** The voucher
+> description is entered here, for example Journal Voucher.
+>
+>  **New:** Clicking this button
+> initiates entries for a new voucher type.
+>
+>  **Edit:** Clicking this button after
+> selecting an existing voucher type makes the selected voucher type
+> available for editing. A list of already defined vouchers is shown on
+> the screen and the user may make the required selection from the list.
+>
+>  **Delete:** Click on this button (after selecting a
+> voucher from the existing list) deletes the selected voucher type. It
+> is to be noted that the delete function works only till the time no
+> entries have been made against a particular type. The delete function
+> will not work once actual vouchers are entered against the type.
+>
+>  **Print Sequence:** This allows the
+> user to define the printing sequence of the voucher in the available
+> GL reports. Further explained, this means that a report may contain
+> details of 5 voucher types. This option controls which type is to be
+> displayed in which sequence.
+>
+>  **Format:** A company may have
+> pre-printed stationery on which it needs to print vouchers. This
+> option allows the user to define a customized print setup of the
+> various voucher fields. The customized setup is detailed and allows
+> the user to define fonts, their sizes in addition to defining the
+> exact print locations of each field. The print location of each field
+> may be defined via entering X and Y figures (where X and Y represent
+> the screen axis) or using the more user friendly option which allows
+> the user to select, drag and drop the various fields on a preview
+> screen that becomes available.
+
+### Voucher type setup 
+
+Clicking this button displays the fields that need to be entered for a
+voucher type, In case an already existing voucher type is being edited,
+the existing data becomes available for editing while blank fields are
+displayed for new voucher type entry. These fields are available in
+various *Tabs*.
+
+Each of the tabs and fields within are explained below:
+
+[Adding Information "General Tab":]{.underline}
+
+The General Tab contains the following information:
+ **ID:** user ID will be entered here.
+
+>  **Code:** Each voucher type is
+> assigned a unique code in the system, which acts as the identifier for
+> the type. This column displays the voucher code.
+>
+>  **System:** This allows the user to
+> select the system for which the voucher type is being defined. System
+> refers to the various applications that are activated in the package.
+> For example, the sales and a/c receivable system.
+>
+>  **Title:** This is the title of the
+> voucher
+>
+>  **Default narration:** This is the
+> default narration that is to be displayed each time a voucher of the
+> type is entered.
+>
+>  **Default account:** Select the
+> default account for this voucher, which is used in the vouchers data
+> entry program to generate a default transaction to balance the
+> voucher.
+>
+>  **Automatic generation:** Click this
+> checkbox to enable automatic generation of voucher numbers.
+>
+>  **Display number after save:** Click
+> this check box to display the voucher number after the voucher is
+> saved.
+>
+>  **Initialize at period end/year
+> end:** Checking this option initialize the voucher serial number at
+> the end of each period/each year.
+>
+>  **Never:** By clicking on this
+> option the voucher number shall not be displayed when you will log on
+> next time.
+
+[Adding Information "Protected Accounts Tab":]{.underline}
+
+Click this tab to define protected account codes. The software provides
+the facility to restrict data entry into a range of accounts or in a
+particular (single) account for a specific voucher type.
+
+>  **Account From:** The starting
+> (From) account code for which restrictions need to be applied.
+>
+>  **Account To:** The ending (To)
+> account code for which restrictions need to be applied.
+>
+>  **Type:** The restriction could be
+> only on Credit entries, Debit entries or both types of entries. For
+> example the user can either totally prohibit entry into the
+> 'Creditors' account through a Sales Voucher or he can prohibit credit
+> entry into Bank accounts through a Bank Debit Voucher.
+>
+>  **Action:** Deviation from the above
+> controls may be totally disallowed or simply activate a warning prior
+> to proceeding. Select the type of action from the drop down list.
+>
+>  **Add:** Click this button to add a
+> new row to the list of the protected accounts.
+>
+>  **Delete:** Click this button to
+> delete a row from the list of the protected accounts.
+
+[Adding Information "Authorities Tab":]{.underline}
+
+Click this tab to setup authorized users that may access the voucher
+type. By default all the users have access to this voucher type.
+However, once this option is activated then only selected user(s) will
+have access to this voucher type.
+
+>  **Add:** To add a new user, click on
+> the add button and select a user from drop down list box.
+>
+>  **Delete:** Use this button to
+> delete a user from the authority's list.
+>
+>  **User:** User ID will be entered
+> here.
+>
+>  **Modify:** Use this button to
+> modify the authorities from the authority's list.
+>
+>  **Verify:** Use this button to
+> verify the authorities from the authority's list.
+>
+>  **Level:** Asks for the level
+> number.
+>
+>  **Level description:** The level's
+> description will be entered here.
+>
+>  **Print footer:** If you wish to
+> print the footer click on this box.
+>
+>  **Picture Path:** This allows you to
+> specify the picture path regarding the authorities.
+>
+>  **Position:** This tab is used for
+> the printing purpose and authority's position is printed if specified.
+
+[Adding Information "Function Keys Tab":]{.underline}
+
+This tab page contains an option to define standard function keys for
+the voucher type. Text or a number may be entered against a particular
+function key and resultantly when the function key is pressed during
+voucher entry, the value entered here is displayed at that time. This
+may usually be used to save time during data entry via pressing a single
+function key to achieve the desired results. For example, if '10000' is
+defined against the function key F1 then every time key F1 is pressed
+(during the voucher entry) the system will fill the selected field with
+the value '10000'. The function key F-2 is by default disabled and it is
+used to as a pick list. Similarly, function key F-10 is also disabled.
+
+[Adding Information "Options Tab":]{.underline}
+
+This tab page contains various options via which the user may tailor (in
+the form of including or excluding various information) the printing of
+the voucher. Options available are Current date & time, Cost center,
+Ref/Chq No., etc. The option to select or de-select is controlled
+through checking or leaving the relative check boxes as blank. In
+addition, the user may specify the top and bottom margins as well as
+line spacing along with the analysis options. Furthermore, the user can
+define options like prepared by, verified by, audited by and received by
+thus allowing the authorities verification and so forth.
+
+Other than the above, two radio buttons random and sequential are also
+available in the voucher setup. These buttons are used for the analysis
+part. You can define the authority's name sequentially by clicking on
+the "sequential" button for example, authority 1, authority 2 while for
+random names, click on the "random" button for example, authority 2,
+authority 1.
+
+[Adding Information "Customize Printing Tab":]{.underline}
+
+Options in this tab allow the user to customize voucher printing. Four
+tabs are shown on the screen navigating which the user can set customize
+the settings of the printed output of the voucher. These settings
+include, Page Settings, Orientation, Zoom factor, Page size, Picture to
+be displayed in background, its size and position, Text printing options
+etc. Header, Detail and Footer options are also customized via this
+option. The usage is simple and requires the user to check or leave
+blank various check boxes in addition to defining fonts etc.
+
+### Voucher Format Setup 
+
+A company may have pre-printed stationery on which it needs to print
+vouchers. This option allows the user to define a customized print setup
+of the various voucher fields. The customized setup is detailed and
+allows the user to define fonts, their sizes in addition to defining the
+exact print locations of each field. The print location of each field
+may be defined via entering X and Y figures (where X and Y represent the
+screen axis) or using the more user friendly option which allows the
+user to select, drag and drop the various fields on a preview screen
+that becomes available.
+
+### Foreign currency rates setup 
+
+When do I need it? Your firm may be buying or selling products, services
+or whatever the case maybe in foreign currencies. Our software helps you
+out here by enabling you to enter up to five currencies to check and
+compare the exchange rates on a daily basis or over a period of time,
+whichever you wish for. The software will not show you just the exchange
+rate between rupee (your reporting currency) and the foreign currencies
+you have entered, but also a comparison of all the five currencies with
+each other.
+
+[Getting there:]{.underline} On the main menu screen go to the setup
+menu and then select foreign currency rates. This will display the
+foreign currency rates screen we will be talking about.
+
+[Adding information:]{.underline} The foreign currency rates setup
+screen by default displays the name of the currency entered during the
+installation process, you can add more if multi-currency option is
+checked during the installation process. To add more currencies you
+would have to do the following steps:
+
+Following are the options available in foreign currencies setup:
+
+>  **Add:** Click the "**Add**" button;
+> this will create a new row for data to be entered for other
+> currencies. You can repeat the process in order to make multiple
+> entries. Now you can enter information in the different fields
+> provided.
+
++---+---+-----------------------------------------------------------------+
+|   | * | > You can enter, as many currencies as you want, however there  |
+|   | * | > will be five reporting currencies.                            |
+|   | N |                                                                 |
+|   | o |                                                                 |
+|   | t |                                                                 |
+|   | e |                                                                 |
+|   | * |                                                                 |
+|   | * |                                                                 |
++===+===+=================================================================+
+|   |   |                                                                 |
++---+---+-----------------------------------------------------------------+
+
+>  **Use exchange rates:** this option has two radio
+> buttons, "period wise" and "date wise" which by default are linked
+> with the rates.
+
+[Adding information in "Period-wise exchange rates" tab; taking rupee as
+the reporting]{.underline} [currency:]{.underline}
+
+Later, if you require using exchange rates in the course of a system
+activity such as voucher generation, it would be easier for you if you
+could just enter an exchange rate once and would be able to use that
+where and when required. This you could do by entering the different
+exchange rates for the number of periods defined during the setup.
+
+[Adding information in "Period-wise exchange rates" tab - taking Dollar
+as the]{.underline} [reporting currency:]{.underline}
+
+Select Dollar as your reporting currency by clicking on the field
+provided on the left of serial number. The pointer will move accordingly
+and then click on the "Period-wise Exchange rate" tab.
+
+[Adding information in the "Date-wise exchange rates" tab:]{.underline}
+
+If you require using exchange rates in the course of a system activity
+such as foreign currency gain loss calculation on actual exchange rates
+basis you can do that by using this option. The system through this
+screen provides you the facility to enter an exchange rate for a
+particular date.
+
+>  **Add:** Click the "**Add**" button;
+> this will create a new row for data to be entered for different dates.
+> You can repeat the process in order to make multiple entries. Now you
+> can enter information in the different fields provided.
+
++---+---+-----------------------------------------------------------------+
+|   | * | > Other system features will work in the same manner e.g. save, |
+|   | * | > close etc.                                                    |
+|   | N |                                                                 |
+|   | o |                                                                 |
+|   | t |                                                                 |
+|   | e |                                                                 |
+|   | * |                                                                 |
+|   | * |                                                                 |
++===+===+=================================================================+
+|   |   |                                                                 |
++---+---+-----------------------------------------------------------------+
+
+### Sites Setup 
+
+Are there any pre-conditions attached to this setup? Yes, the sites
+setup will be enabled if the data transfer module has been purchased
+with the software and is installed. Also, at the time of installation
+the numbers of sites need to be specified.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the setup menu and then select sites. This
+will display the sites setup screen we will be talking about.
+
+Your first entry is simple. Just key in the required information and
+then press save. The newly created record (site) will be displayed on
+the screen, with its code and description (usually the name of the
+location).
+
+If you scroll the screen to the right other fields such as level
+(normally taken with respect to a base location e.g. an office location
+can come under the head office etc.) would need to be entered.
+
+The system also keeps a record of the data transferred between the
+different sites. This will be shown under the fields named, last packet
+sent or received. The system will automatically generate this
+information and these fields will be for view only.
+
++---+---+-----------------------------------------------------------------+
+|   | * | > Other system features will work in the same manner e.g. edit, |
+|   | * | > delete, preview etc                                           |
+|   | N |                                                                 |
+|   | o |                                                                 |
+|   | t |                                                                 |
+|   | e |                                                                 |
+|   | * |                                                                 |
+|   | * |                                                                 |
++===+===+=================================================================+
+|   |   |                                                                 |
++---+---+-----------------------------------------------------------------+
+
+### User Group Setup 
+
+The purpose of user group creation is to facilitate the user in defining
+system security. The software you have purchased accommodates security
+features at all usage levels, ranging from menu to button level. You can
+make certain features available for certain people and the same could be
+made unavailable for others.
+
+Do I have to define each and every security feature for every
+individual? I know this could become really cumbersome and that's where
+our user group features come in handy. You can define different levels
+of security for various groups and then later individuals can be simply
+put into different user groups. Thus will have all the privileges of
+that particular group. Following is how it will work:
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the setup menu and then select user group.
+This will display the users group setup screen we will be talking about.
+
+[Adding information to Users Groups:]{.underline}
+
+>  **New:** You can add user groups to
+> your system by simply clicking on the "New" button. A screen titled
+> "Define New User Group" will appear**.**
+
+Enter the code and the name of the user group and then come down to the
+purchase system displayed in the window on the right. In the screen
+shown above, you can work at the upper most level. Where you can define
+which menus you would want, for example, the data entry group to have
+access to. The screen on the right shows the options and the user is
+provided with a check box.
+
+Similarly, you can go down to different levels of details while defining
+accessibility for a particular user group. Simply by cascading (click
+the plus sign next to purchase system) "purchase system" displayed on
+the screen, a list of all the menus will be displayed. You can now
+follow the same procedure for assigning accessibility.
+
+Finally, you can go down to the button level on a particular screen of a
+menu select or unselect the options available as required.
+
+>  **Ok:** Once, you have defined all
+> the necessary options for a particular group you can save that by
+> pressing the "**Ok**" button. This will create a user group named
+> "Data Entry" (shown below).
+
++---+---+-----------------------------------------------------------------+
+|   | * | > Other system features will work in the same manner e.g. edit, |
+|   | * | > delete, preview etc                                           |
+|   | N |                                                                 |
+|   | o |                                                                 |
+|   | t |                                                                 |
+|   | e |                                                                 |
+|   | * |                                                                 |
+|   | * |                                                                 |
++===+===+=================================================================+
+|   |   |                                                                 |
++---+---+-----------------------------------------------------------------+
+
+### User Setup 
+
+Now that you have created the user groups it is just simply a matter of
+creating users and assigning them to the different user groups created.
+This will automatically create different user with varying accessibility
+options, as desired.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the setup menu and then select user. This
+will display the user setup screen we will be talking about.
+
+>  **Save:** Your first entry is
+> simple. Just key in the required information, select the user group
+> already created from the pick list, and then press save. The newly
+> created record (user) will be displayed on the screen, with its code
+> and description (name), as under:
+
+You can create as many users as you want by simply clicking the new
+button, all the fields on the user setup screen will be refreshed for
+new entry.
+
++---+---+-----------------------------------------------------------------+
+|   | * | > Other system features will work in the same manner e.g. edit, |
+|   | * | > delete, preview etc                                           |
+|   | N |                                                                 |
+|   | o |                                                                 |
+|   | t |                                                                 |
+|   | e |                                                                 |
+|   | * |                                                                 |
+|   | * |                                                                 |
++===+===+=================================================================+
+|   |   |                                                                 |
++---+---+-----------------------------------------------------------------+
+
+### Preferences Setup 
+
+This option lists various preferences, which the user may manipulate to
+achieve desired settings in the system. Obviously, these preferences are
+limited and only those available for selection are included as
+preferences, such as: System date and time can be displayed or hidden in
+different reports, sorting on account code in chart of account pick-list
+etc.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the setup menu and then select Preferences
+Setup which will show various values which may be set according to
+preference.

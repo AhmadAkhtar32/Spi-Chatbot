@@ -1,0 +1,150 @@
+SPI General Ledger (GL) Module — REPORTS
+Source: Sidat Hyder Financials Software Guide
+
+### Reports 
+
+The reports window has the following setups:
+
+[Trial Balance:]{.underline}
+
+As the title implies, this report prints the trial balance of a company.
+
+[Getting there;]{.underline}
+
+On the main menu screen go to the Reports menu and then select *Trial
+Balance*.
+
+This is one of the most useful reporting features that is available in
+the GL system. Other than providing various options/criteria to generate
+user requirements specific trial balances, the displayed report also has
+a drill down feature enabling you to track transactions right down to
+the individual voucher entry level.
+
+Click the option that takes you to the printing screen. Some of the
+options available to the user are discussed below for your convenience:
+
+>  Make your selections to restrict the
+> generated report to reflect only the Activity or the Opening Balances
+> or the Closing Balance or a combination all three.
+>
+>  Make your choice to print Accounts
+> that have balances without any transactions during the period or all
+> accounts with balances and transactions entered for the period(s).
+>
+>  Make your choice to include only
+> posted transactions or only unposted ones or if required print all
+>
+>  Choose to print only Debits or Credits columns or
+> both or even include a net (balance) figures of both these figures
+> including the option to skip printing of debit and credit figures and
+> just displaying the net accumulative.
+>
+>  Choose to print the trial balance
+> for the whole year, a number of years, a particular range of periods
+> or dates or even a daily trial balance!
+>
+>  Make your choice to print the trial
+> for the complete Chart of Accounts or just the Secondary Chart of
+> Accounts or skip the group levels to print only detail level accounts
+> for any given range of accounts or accounts
+
+Specify levels, which means specify the structure level (of your Chart
+of Accounts) for which you required the report. Choose to print for
+level 1 or level 2 or level 3 as per the structure defined for your COA.
+Upper levels automatically reflect lower level transactions and thus
+limit the size of the report by reflecting detailed transactions ingroup
+totals where group represents a level.
+
+>  Choose whether you want the report
+> to include or exclude yearend vouchers effects.
+>
+>  Choose to print row separators
+> between separate account codes to improve readability
+>
+>  Option of the group level accounts
+> is also available.
+>
+>  Print the report in any currency if
+> the multi-currency option is installed.
+>
+> Print report in Currency A for transactions entered in currency B
+>
+>  If required, type pf currency can
+> also be shown on the report by simply clicking on the check box.
+>
+>  Print the report in DOS mode or save
+> the output in a text file
+>
+>  Define cost centers.
+>
+>  Accounts can be sorted out according
+> to the code and the title.
+>
+>  Print for a range of sites or a
+> consolidated trial balance for all sites
+>
+>  Use the Like option to print
+> accounts matching a certain pattern. For example, to print accounts
+> which have the third and fourth characters as 47 simply enter two
+> underscores ('\_') then '47' followed by '%' sign (i.e.
+>
+> \_\_47%) in the account range specifications column
+
+Go to the displayed report and double click any account code to view the
+Ledger for that account code and in the ledger simply click to reach the
+voucher level of that entry.
+
+[Ledgers:]{.underline}
+
+As the title implies, this options displays the ledger for the Chart of
+Accounts.
+
+[Getting there:]{.underline}
+
+On the main menu screen go to the Reports menu and then select *Ledger*.
+
+Click the option that takes you to the printing screen, which has
+various criteria facilitating you to print the Ledger for any chart of
+account, secondary chart of account or range of accounts.
+
+>  If required then make your choice to
+> limit the number of records to by specifying the account range, the
+> parent a/c levels, the period range, cost centre, posting status, etc.
+>
+>  You are also given the choice print
+> only group level account codes.
+>
+>  Make your selection to print the
+> report in any desired reporting currencies provided the multi-currency
+> option is installed.
+>
+>  Make your choice to have each
+> account code on a separate page
+>
+>  If required specify to print even each cost centre
+> on a separate page
+>
+>  Use the drill down feature to view
+> the details of any entry by simply double clicking on the display to
+> take you to the original voucher.
+>
+>  If you wish to calculate the opening
+> balance, check the respective box and opening balance will be
+> calculated.
+>
+>  Moreover, the status, opening
+> /closing balance, project column, reference can also be shown by
+> checking the respective boxes.
+>
+>  Print for a range of sites or a
+> consolidated trial balance for all sites
+>
+>  Use the Like option to print
+> accounts matching a certain pattern. For example, to print accounts
+> which have the third and fourth characters as 47 simply enter two
+> underscores ('\_') then '47' followed by '%' sign (i.e. \_\_47%) in
+> the account range specifications column
+>
+>  For the purpose of discrete account
+> information, click on " discrete a/c" and the information will be
+> displayed along with the code and title of the account.

@@ -1,0 +1,57 @@
+SPI General Ledger (GL) Module — OVERVIEW
+Source: Sidat Hyder Financials Software Guide
+
+This section gives an overview of Sidat Hyder Financials, and how it can
+save your time and effort.
+
+**What is Sidat Hyder Financials?**
+
+Sidat Hyder Financials is an accounting system that can fully integrate
+your Sales, Purchase, Inventory, Fixed Assets and General Ledger
+systems. It is reliable and robust software that will adapt and expand
+as your business and accounting needs grow. Sidat Hyder Financials gives
+you the power and flexibility to work the way you want to.
+
+Sidat Hyder Financials is full of useful functions that provide
+solutions to your everyday Accounting problems. Sidat Hyder Financials
+allows the following:
+
+-   User defined system configuration and setup
+
+-   State of the art reporting
+
+-   Budgeting and cost controls
+
+-   Multi-currency
+
+-   Security flexible data entry
+
+-   Payments & withholding tax
+
+-   Flexible data entry and
+
+-   Much more...
+
+With an easy to use and intuitive Windows based interface, the system
+architecture is based on Client Server Technology and has been developed
+to work in an integrated environment.
+
+Whatever combination of programs you use, the functions provided are the
+same -- you only need to learn how to use the programs once.
+
+### Installing Sidat Hyder Financials 
+
+Sidat Hyder's implementation staff will carry out the necessary
+installation procedures. However, your help will be required during the
+process.
+
+The following screens are for the implementation staff. Do I need to sit
+through the whole process? Yes I would recommend that, as a lot of
+information that needs to be keyed in will come from you.
+
+**How do I install?**
+
+Insert the CD named Sidat Hyder Financials General Ledger Module into
+the CD drive. Double click on the setup icon, the system will ask you
+for the destination drive on which you would like save the program --
+select as desired.
