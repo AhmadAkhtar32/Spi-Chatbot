@@ -16,16 +16,18 @@ How it works, in order:
   5. build_answer_prompt — hand only those relevant chunks to Gemini, and
                         ask it to answer using just that material
 
-Embeddings are computed once per knowledge base and cached in memory —
-re-embedding on every request would be slow and wasteful.
-
-NOTE: embedding calls are now batched (see BATCH_SIZE below). This
-wasn't needed for the original placeholder documents (a handful of
-chunks total), but real reference material — like the GL module guides —
-produces well over 100 chunks per knowledge base, and embedding APIs
-typically cap how many texts can go in a single request.
+Embeddings are cached to disk (see _cache_path below), not just in
+memory. This matters in practice: uvicorn's --reload restarts the whole
+Python process on every file save, which would otherwise force every
+document to be re-embedded from scratch on every restart — burning
+through the free tier's embed_content rate limit (100 requests/minute)
+very quickly during active development. The cache is keyed by a hash of
+the folder's contents, so editing a document automatically invalidates
+it and triggers a fresh (one-time) re-embed.
 """
 
+import hashlib
+import json
 import math
 from pathlib import Path
 
@@ -72,9 +74,20 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
+def _folder_hash(folder: Path) -> str:
+    """Fingerprint of a knowledge folder's contents — changes if any file
+    is added, removed, or edited, so the cache below auto-invalidates."""
+    h = hashlib.sha256()
+    for path in sorted(folder.glob("*.txt")):
+        h.update(path.name.encode())
+        h.update(path.read_bytes())
+    return h.hexdigest()
+
+
 class KnowledgeBase:
     """One embedded, searchable set of documents (e.g. all Implementation
-    Expert reference guides). Built once, then reused across requests."""
+    Expert reference guides). Built once, then reused across requests —
+    and cached to disk so it survives server restarts too."""
 
     EMBED_MODEL = "gemini-embedding-001"
     BATCH_SIZE = 90  # texts per embed_content call — stays under typical API batch caps
@@ -84,8 +97,28 @@ class KnowledgeBase:
         self.chunks: list[dict] = []  # [{source, text, embedding}]
         self._build(folder)
 
+    def _cache_path(self, folder: Path) -> Path:
+        cache_dir = folder.parent / ".cache"
+        cache_dir.mkdir(exist_ok=True)
+        safe_name = folder.name.replace("/", "_")
+        return cache_dir / f"{safe_name}.json"
+
     def _build(self, folder: Path):
         from google.genai.types import EmbedContentConfig
+
+        current_hash = _folder_hash(folder)
+        cache_file = self._cache_path(folder)
+
+        # Reuse cached embeddings if this folder's contents haven't changed
+        # since they were last computed — skips the API entirely.
+        if cache_file.exists():
+            try:
+                cached = json.loads(cache_file.read_text(encoding="utf-8"))
+                if cached.get("hash") == current_hash:
+                    self.chunks = cached["chunks"]
+                    return
+            except (json.JSONDecodeError, KeyError):
+                pass  # corrupt/old cache format — fall through and rebuild
 
         docs = load_documents(folder)
         all_chunks = []
@@ -94,6 +127,7 @@ class KnowledgeBase:
                 all_chunks.append({"text": chunk, "source": doc["source"]})
 
         if not all_chunks:
+            self.chunks = []
             return
 
         texts = [c["text"] for c in all_chunks]
@@ -109,7 +143,11 @@ class KnowledgeBase:
 
         for chunk, embedding in zip(all_chunks, embeddings):
             chunk["embedding"] = embedding.values
+
         self.chunks = all_chunks
+        cache_file.write_text(
+            json.dumps({"hash": current_hash, "chunks": all_chunks}), encoding="utf-8"
+        )
 
     def search(self, query: str, top_k: int = 5) -> list[dict]:
         """Return the top_k chunks most relevant to the query."""
