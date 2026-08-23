@@ -266,7 +266,8 @@ def support_expert(req: ExpertRequest):
         return ExpertResponse(reply=f"Error calling Gemini: {exc}", sources=[])
 
 
-frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+frontend_dir = Path(__file__).resolve().parent.parent.parent / "spi-chatbot-react" / "dist"
+app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
 
 # --- Project Knowledge Expert (RAG, per-client, upload-based) --------------
