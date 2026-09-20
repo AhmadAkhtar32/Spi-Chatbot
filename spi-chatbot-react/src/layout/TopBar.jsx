@@ -68,15 +68,14 @@ export default function TopBar() {
             <div className="w-7 h-7 rounded-full bg-slate-100 border border-border flex items-center justify-center">
               <User className="w-3.5 h-3.5 text-ink-secondary" strokeWidth={2} />
             </div>
-            <span className="hidden sm:block text-[13px] font-medium text-ink">Minahil A.</span>
+            
             <ChevronDown className="w-3.5 h-3.5 text-ink-secondary" strokeWidth={2} />
           </button>
           {profileOpen && (
             <div className="absolute right-0 top-11 w-56 bg-surface border border-border rounded-md shadow-lg py-1.5 z-40">
               <div className="px-3 py-2 border-b border-border">
-                <div className="text-[13px] font-medium text-ink">Minahil A.</div>
-                <div className="text-[11.5px] text-ink-secondary">Intern &middot; D-Biz Solutions</div>
-              </div>
+              <User className="w-4 h-4 text-ink-secondary" />
+            </div>
               <button className="w-full text-left px-3 py-2 text-[13px] text-ink-secondary hover:bg-slate-50 flex items-center gap-2">
                 <User className="w-3.5 h-3.5" /> Profile
               </button>
