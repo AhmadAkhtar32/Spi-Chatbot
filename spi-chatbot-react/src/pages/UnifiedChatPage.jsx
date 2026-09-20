@@ -81,9 +81,9 @@ export default function UnifiedChatPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
             className="text-[28px] font-bold mb-2 tracking-tight text-center bg-gradient-to-r from-[#1E3A8A] via-primary to-[#1E3A8A]
-                       bg-[length:200%_auto] bg-clip-text text-transparent animate-shimmer"
+            bg-[length:200%_auto] bg-clip-text text-transparent animate-shimmer"
           >
-            {getGreeting()}, Minahil
+            {getGreeting()}
           </motion.h1>
           <p className="text-[13.5px] text-ink-secondary mb-7 text-center max-w-md leading-relaxed">
             Ask anything about inventory, orders, ERP navigation, setup, or troubleshooting.

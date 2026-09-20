@@ -17,3 +17,6 @@ dist/
 Thumbs.db
 
 **/knowledge/.cache/
+
+web.config
+spi-chatbot/backend/logs/
