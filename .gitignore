@@ -3,6 +3,7 @@
 .env.example
 backend/.env
 spi-chatbot/backend/.env
+.venv/
 
 # Python
 __pycache__/
