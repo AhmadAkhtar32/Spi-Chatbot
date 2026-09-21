@@ -1,5 +1,6 @@
 # Environment files (contain secret keys — never commit these)
 .env
+.env.example
 backend/.env
 spi-chatbot/backend/.env
 

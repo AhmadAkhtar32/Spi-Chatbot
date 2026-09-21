@@ -267,7 +267,7 @@ def support_expert(req: ExpertRequest):
 
 
 frontend_dir = Path(__file__).resolve().parent.parent.parent / "spi-chatbot-react" / "dist"
-app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+# app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
 
 # --- Project Knowledge Expert (RAG, per-client, upload-based) --------------
