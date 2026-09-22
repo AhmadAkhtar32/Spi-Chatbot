@@ -11,6 +11,9 @@ Endpoint:
 import json
 import os
 from pathlib import Path
+from gemini_utils import generate_with_retry, friendly_error_message
+import logging
+logging.basicConfig(level=logging.INFO)
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -25,7 +28,7 @@ from document_generator import list_templates, generate_document
 load_dotenv()
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_MODEL = "gemini-3.6-flash"
+GEMINI_MODEL = "gemini-3.5-flash-lite"
 KNOWLEDGE_DIR = Path(__file__).resolve().parent / "knowledge"
 
 # License config — see licenses.json. There's no login system yet, so this
@@ -191,7 +194,7 @@ def chat(req: ChatRequest):
     try:
         return ask_gemini(req.message, previous_interaction_id=req.interaction_id)
     except Exception as exc:
-        return ChatResponse(reply=f"Error calling Gemini: {exc}", trace=[], interaction_id=req.interaction_id)
+        return ChatResponse(reply=friendly_error_message(exc), trace=[], interaction_id=req.interaction_id)
 
 
 # --- Implementation Expert (RAG) -------------------------------------------
@@ -226,12 +229,12 @@ def implementation_expert(req: ExpertRequest):
         prompt = build_answer_prompt("Implementation Expert", req.question, relevant_chunks)
 
         client = genai.Client(api_key=GEMINI_API_KEY)
-        response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
+        response = generate_with_retry(client, model=GEMINI_MODEL, contents=prompt)
 
         sources = sorted({c["source"] for c in relevant_chunks})
         return ExpertResponse(reply=response.text, sources=sources)
     except Exception as exc:
-        return ExpertResponse(reply=f"Error calling Gemini: {exc}", sources=[])
+        return ExpertResponse(reply=friendly_error_message(exc), sources=[])
 
 
 @app.post("/api/support-expert", response_model=ExpertResponse)
@@ -258,16 +261,16 @@ def support_expert(req: ExpertRequest):
         )
 
         client = genai.Client(api_key=GEMINI_API_KEY)
-        response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
+        response = generate_with_retry(client, model=GEMINI_MODEL, contents=prompt)
 
         sources = sorted({c["source"] for c in relevant_chunks})
         return ExpertResponse(reply=response.text, sources=sources)
     except Exception as exc:
-        return ExpertResponse(reply=f"Error calling Gemini: {exc}", sources=[])
+        return ExpertResponse(reply=friendly_error_message(exc), sources=[])
 
 
-frontend_dir = Path(__file__).resolve().parent.parent.parent / "spi-chatbot-react" / "dist"
-# app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+# frontend_dir = Path(__file__).resolve().parent.parent.parent / "spi-chatbot-react" / "dist"
+
 
 
 # --- Project Knowledge Expert (RAG, per-client, upload-based) --------------
@@ -361,12 +364,12 @@ def project_knowledge_expert(req: ProjectKnowledgeRequest):
         )
 
         client = genai.Client(api_key=GEMINI_API_KEY)
-        response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
+        response = generate_with_retry(client, model=GEMINI_MODEL, contents=prompt)
 
         sources = sorted({c["source"] for c in relevant_chunks})
         return ExpertResponse(reply=response.text, sources=sources)
     except Exception as exc:
-        return ExpertResponse(reply=f"Error calling Gemini: {exc}", sources=[])
+        return ExpertResponse(reply=friendly_error_message(exc), sources=[])
 
 
 # --- Document Generator (template filling — deliberately NOT AI-based) ----
@@ -425,7 +428,7 @@ Latest message: {message}
 
 Category:"""
 
-    response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
+    response = generate_with_retry(client, model=GEMINI_MODEL, contents=prompt)
     category = response.text.strip().lower()
     valid = {"bi_expert", "implementation_expert", "support_expert", "general"}
     return category if category in valid else "general"
@@ -477,7 +480,7 @@ def _unified_rag_answer(kb_name: str, expert_label: str, message: str, history: 
 
     prompt = build_answer_prompt(expert_label, question_with_context, relevant_chunks)
     client = genai.Client(api_key=GEMINI_API_KEY)
-    response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
+    response = generate_with_retry(client, model=GEMINI_MODEL, contents=prompt)
     return response.text
 
 
@@ -495,7 +498,7 @@ def _unified_general_answer(message: str, history: list[dict]) -> str:
     from google import genai
 
     client = genai.Client(api_key=GEMINI_API_KEY)
-    response = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
+    response = generate_with_retry(client, model=GEMINI_MODEL, contents=prompt)
     return response.text
 
 
@@ -545,7 +548,7 @@ def unified_chat(req: UnifiedChatRequest):
             reply = _unified_general_answer(req.message, req.history)
             return UnifiedChatResponse(reply=reply, trace=[])
     except Exception as exc:
-        return UnifiedChatResponse(reply=f"Error: {exc}", trace=[])
+        return UnifiedChatResponse(reply=friendly_error_message(exc), trace=[])
 
 
 # --- Voice input (transcription, including Urdu) ---------------------------
@@ -566,7 +569,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
         mime_type = file.content_type or "audio/webm"
 
         client = genai.Client(api_key=GEMINI_API_KEY)
-        response = client.models.generate_content(
+        response = generate_with_retry(
+            client,
             model=GEMINI_MODEL,
             contents=[
                 "Transcribe this audio clip exactly as spoken. It may be in English or Urdu. "
@@ -577,7 +581,9 @@ async def transcribe_audio(file: UploadFile = File(...)):
         )
         return {"transcript": response.text.strip()}
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail=friendly_error_message(exc))
 
 
-app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+frontend_dir = Path(__file__).resolve().parent.parent.parent / "spi-chatbot-react" / "dist"
+if frontend_dir.exists():
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")

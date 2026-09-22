@@ -30,6 +30,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+from gemini_utils import embed_with_retry
 
 
 def load_documents(folder: Path) -> list[dict]:
@@ -134,7 +135,8 @@ class KnowledgeBase:
         embeddings = []
         for i in range(0, len(texts), self.BATCH_SIZE):
             batch = texts[i : i + self.BATCH_SIZE]
-            result = self.client.models.embed_content(
+            result = embed_with_retry(
+                self.client,
                 model=self.EMBED_MODEL,
                 contents=batch,
                 config=EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
@@ -145,9 +147,14 @@ class KnowledgeBase:
             chunk["embedding"] = embedding.values
 
         self.chunks = all_chunks
-        cache_file.write_text(
-            json.dumps({"hash": current_hash, "chunks": all_chunks}), encoding="utf-8"
-        )
+        try:
+            cache_file.write_text(
+                json.dumps({"hash": current_hash, "chunks": all_chunks}), encoding="utf-8"
+            )
+        except OSError:
+            # Read-only filesystem (e.g. Vercel serverless) — the embeddings
+            # still work for this request, they just won't persist to disk.
+            pass
 
     def search(self, query: str, top_k: int = 5) -> list[dict]:
         """Return the top_k chunks most relevant to the query."""
@@ -156,7 +163,8 @@ class KnowledgeBase:
         if not self.chunks:
             return []
 
-        result = self.client.models.embed_content(
+        result = embed_with_retry(
+            self.client,
             model=self.EMBED_MODEL,
             contents=query,
             config=EmbedContentConfig(task_type="RETRIEVAL_QUERY"),

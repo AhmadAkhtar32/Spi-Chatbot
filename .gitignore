@@ -1,6 +1,5 @@
 # Environment files (contain secret keys — never commit these)
 .env
-.env.example
 backend/.env
 spi-chatbot/backend/.env
 .venv/
@@ -17,8 +16,6 @@ dist/
 # OS junk
 .DS_Store
 Thumbs.db
-
-**/knowledge/.cache/
 
 web.config
 spi-chatbot/backend/logs/
