@@ -7,6 +7,7 @@ import TypingIndicator from '../components/TypingIndicator.jsx'
 import MessageInput from '../components/MessageInput.jsx'
 import SuggestionChip from '../components/SuggestionChip.jsx'
 import AnimatedBackground from '../components/AnimatedBackground.jsx'
+import { API_BASE } from '../api.js'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -43,7 +44,7 @@ export default function UnifiedChatPage() {
       // jump between different internal experts turn to turn.
       const history = messages.slice(-8).map((m) => ({ role: m.role, content: m.content }))
 
-      const res = await fetch('/api/unified-chat', {
+      const res = await fetch(`${API_BASE}/api/unified-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, history }),

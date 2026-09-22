@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { FileText, Download, Copy, Check, Loader2 } from 'lucide-react'
 import Breadcrumb from '../layout/Breadcrumb.jsx'
+import { API_BASE } from '../api.js'
 
 export default function DocumentGeneratorPage() {
   const [templates, setTemplates] = useState([])
@@ -12,7 +13,7 @@ export default function DocumentGeneratorPage() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetch('/api/document-generator/templates')
+    fetch(`${API_BASE}/api/document-generator/templates`)
       .then((res) => res.json())
       .then((data) => {
         setTemplates(data.templates || [])
@@ -37,7 +38,7 @@ export default function DocumentGeneratorPage() {
     setGenerating(true)
     setError(null)
     try {
-      const res = await fetch('/api/document-generator/generate', {
+      const res = await fetch(`${API_BASE}/api/document-generator/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ template_id: selectedId, fields: fieldValues }),

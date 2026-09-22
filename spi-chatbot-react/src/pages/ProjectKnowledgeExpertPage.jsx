@@ -4,6 +4,7 @@ import Breadcrumb from '../layout/Breadcrumb.jsx'
 import ChatMessage from '../components/ChatMessage.jsx'
 import TypingIndicator from '../components/TypingIndicator.jsx'
 import MessageInput from '../components/MessageInput.jsx'
+import { API_BASE } from '../api.js'
 
 const DEMO_CLIENTS = ['demo_client', 'client_acme_corp', 'client_northstar']
 
@@ -31,7 +32,7 @@ export default function ProjectKnowledgeExpertPage() {
 
   async function refreshDocuments(id) {
     try {
-      const res = await fetch(`/api/project-knowledge/documents?client_id=${encodeURIComponent(id)}`)
+      const res = await fetch(`${API_BASE}/api/project-knowledge/documents?client_id=${encodeURIComponent(id)}`)
       const data = await res.json()
       setDocuments(data.documents || [])
     } catch {
@@ -55,7 +56,7 @@ export default function ProjectKnowledgeExpertPage() {
       const formData = new FormData()
       formData.append('client_id', clientId)
       formData.append('file', file)
-      const res = await fetch('/api/project-knowledge/upload', { method: 'POST', body: formData })
+      const res = await fetch(`${API_BASE}/api/project-knowledge/upload`, { method: 'POST', body: formData })
       if (!res.ok) {
         const err = await res.json()
         throw new Error(err.detail || 'Upload failed')
@@ -73,7 +74,7 @@ export default function ProjectKnowledgeExpertPage() {
     setMessages((prev) => [...prev, { role: 'user', content: text, timestamp: Date.now() }])
     setLoading(true)
     try {
-      const res = await fetch('/api/project-knowledge/chat', {
+      const res = await fetch(`${API_BASE}/api/project-knowledge/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_id: clientId, question: text }),

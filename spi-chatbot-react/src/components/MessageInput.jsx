@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Send, Paperclip, Mic, Square, Loader2, X } from 'lucide-react'
+import { API_BASE } from '../api.js'
 
 const MAX_CHARS = 2000
 
@@ -85,7 +86,7 @@ export default function MessageInput({ onSend, disabled, value, onValueChange, o
       const formData = new FormData()
       const ext = mimeType.includes('webm') ? 'webm' : 'm4a'
       formData.append('file', blob, `recording.${ext}`)
-      const res = await fetch('/api/transcribe', { method: 'POST', body: formData })
+      const res = await fetch(`${API_BASE}/api/transcribe`, { method: 'POST', body: formData })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.detail || 'Transcription failed')
