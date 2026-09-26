@@ -9,11 +9,13 @@ Endpoint:
 """
 
 import json
+import logging
 import os
 from pathlib import Path
-from gemini_utils import generate_with_retry, friendly_error_message
-import logging
-logging.basicConfig(level=logging.INFO)
+
+from groq import Groq
+from groq_utils import generate_with_retry as groq_generate, friendly_error_message as groq_friendly_error
+from gemini_utils import generate_with_retry as gemini_generate, friendly_error_message as gemini_friendly_error
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -25,10 +27,26 @@ from business_functions import AVAILABLE_FUNCTIONS
 from rag import KnowledgeBase, build_answer_prompt
 from document_generator import list_templates, generate_document
 
+logging.basicConfig(level=logging.INFO)
 load_dotenv()
 
+# Two providers, two roles:
+#   - Groq handles Implementation Expert, Support Expert, and Unified
+#     Chat's routing/general-chat text generation.
+#   - Embeddings for RAG search run locally (see rag.py) — no external
+#     API at all, which removes the embedding-quota bottleneck entirely.
+#     (Note: this means sentence-transformers/torch must be deployed
+#     wherever this backend runs — see the deployment notes before
+#     pushing this to Vercel, since that's a real size constraint there.)
+#   - Gemini stays in place for voice transcription (audio understanding)
+#     and the BI/function-calling path, since neither has a proven,
+#     drop-in Groq equivalent, and BI is unreachable anyway while it's
+#     unlicensed in licenses.json.
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 GEMINI_MODEL = "gemini-3.5-flash-lite"
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+GROQ_MODEL = "openai/gpt-oss-120b"
+
 KNOWLEDGE_DIR = Path(__file__).resolve().parent / "knowledge"
 
 # License config — see licenses.json. There's no login system yet, so this
@@ -48,9 +66,8 @@ app.add_middleware(
 )
 
 # Knowledge bases are expensive to build (they re-embed every document),
-# so each one is built once on first use and cached here for reuse across
-# requests. Add a new entry here for Support Expert / Project Knowledge
-# Expert later — same engine, different folder.
+# so each one is built once on first use and cached here for reuse
+# across requests.
 _knowledge_bases: dict[str, KnowledgeBase] = {}
 
 
@@ -74,10 +91,7 @@ def invalidate_knowledge_base(name: str):
 
 def get_knowledge_base(name: str) -> KnowledgeBase:
     if name not in _knowledge_bases:
-        from google import genai
-
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        _knowledge_bases[name] = KnowledgeBase(KNOWLEDGE_DIR / name, client)
+        _knowledge_bases[name] = KnowledgeBase(KNOWLEDGE_DIR / name)
     return _knowledge_bases[name]
 
 TOOLS = [
@@ -125,14 +139,18 @@ TOOLS = [
 
 class ChatRequest(BaseModel):
     message: str
-    interaction_id: str | None = None  # ID of the previous exchange, for follow-ups
+    interaction_id: str | None = None
 
 
 class ChatResponse(BaseModel):
     reply: str
     trace: list[str]
-    interaction_id: str | None = None  # pass this back in on the next message
+    interaction_id: str | None = None
 
+
+# --- /api/chat (BI path) stays on Gemini — unreachable while bi_expert is
+# unlicensed, and client.interactions.create() has no proven Groq
+# equivalent, so it's out of scope for this migration. -------------------
 
 def ask_gemini(user_question: str, previous_interaction_id: str | None = None) -> ChatResponse:
     from google import genai
@@ -142,9 +160,6 @@ def ask_gemini(user_question: str, previous_interaction_id: str | None = None) -
 
     create_kwargs = {"model": GEMINI_MODEL, "input": user_question, "tools": TOOLS}
     if previous_interaction_id:
-        # This is what gives the model memory of earlier messages in the
-        # same conversation — without it, every message is judged in
-        # isolation and "what about its price?" has no idea what "its" means.
         create_kwargs["previous_interaction_id"] = previous_interaction_id
 
     interaction = client.interactions.create(**create_kwargs)
@@ -194,12 +209,10 @@ def chat(req: ChatRequest):
     try:
         return ask_gemini(req.message, previous_interaction_id=req.interaction_id)
     except Exception as exc:
-        return ChatResponse(reply=friendly_error_message(exc), trace=[], interaction_id=req.interaction_id)
+        return ChatResponse(reply=gemini_friendly_error(exc), trace=[], interaction_id=req.interaction_id)
 
 
-# --- Implementation Expert (RAG) -------------------------------------------
-# Same shared engine (rag.py) will later power Support Expert and Project
-# Knowledge Expert too — just pointed at a different "knowledge/<name>" folder.
+# --- Implementation Expert (RAG) — generation on Groq, embeddings local -
 
 class ExpertRequest(BaseModel):
     question: str
@@ -212,45 +225,41 @@ class ExpertResponse(BaseModel):
 
 @app.post("/api/implementation-expert", response_model=ExpertResponse)
 def implementation_expert(req: ExpertRequest):
-    if not GEMINI_API_KEY:
+    if not GROQ_API_KEY:
         return ExpertResponse(
             reply=(
-                "Demo mode: no GEMINI_API_KEY is set yet, so I can't call the real "
+                "Demo mode: no GROQ_API_KEY is set yet, so I can't call the real "
                 "model. The retrieval pipeline is wired up — add your key to "
                 "backend/.env and this will answer for real."
             ),
             sources=[],
         )
     try:
-        from google import genai
-
         kb = get_knowledge_base("implementation")
         relevant_chunks = kb.search(req.question, top_k=5)
         prompt = build_answer_prompt("Implementation Expert", req.question, relevant_chunks)
 
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        response = generate_with_retry(client, model=GEMINI_MODEL, contents=prompt)
+        client = Groq(api_key=GROQ_API_KEY)
+        response = groq_generate(client, model=GROQ_MODEL, messages=[{"role": "user", "content": prompt}])
 
         sources = sorted({c["source"] for c in relevant_chunks})
-        return ExpertResponse(reply=response.text, sources=sources)
+        return ExpertResponse(reply=response.choices[0].message.content, sources=sources)
     except Exception as exc:
-        return ExpertResponse(reply=friendly_error_message(exc), sources=[])
+        return ExpertResponse(reply=groq_friendly_error(exc), sources=[])
 
 
 @app.post("/api/support-expert", response_model=ExpertResponse)
 def support_expert(req: ExpertRequest):
-    if not GEMINI_API_KEY:
+    if not GROQ_API_KEY:
         return ExpertResponse(
             reply=(
-                "Demo mode: no GEMINI_API_KEY is set yet, so I can't call the real "
+                "Demo mode: no GROQ_API_KEY is set yet, so I can't call the real "
                 "model. The retrieval pipeline is wired up — add your key to "
                 "backend/.env and this will answer for real."
             ),
             sources=[],
         )
     try:
-        from google import genai
-
         kb = get_knowledge_base("support")
         relevant_chunks = kb.search(req.question, top_k=5)
         prompt = build_answer_prompt(
@@ -260,24 +269,19 @@ def support_expert(req: ExpertRequest):
             relevant_chunks,
         )
 
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        response = generate_with_retry(client, model=GEMINI_MODEL, contents=prompt)
+        client = Groq(api_key=GROQ_API_KEY)
+        response = groq_generate(client, model=GROQ_MODEL, messages=[{"role": "user", "content": prompt}])
 
         sources = sorted({c["source"] for c in relevant_chunks})
-        return ExpertResponse(reply=response.text, sources=sources)
+        return ExpertResponse(reply=response.choices[0].message.content, sources=sources)
     except Exception as exc:
-        return ExpertResponse(reply=friendly_error_message(exc), sources=[])
+        return ExpertResponse(reply=groq_friendly_error(exc), sources=[])
 
 
-# frontend_dir = Path(__file__).resolve().parent.parent.parent / "spi-chatbot-react" / "dist"
+frontend_dir = Path(__file__).resolve().parent.parent.parent / "spi-chatbot-react" / "dist"
 
 
-
-# --- Project Knowledge Expert (RAG, per-client, upload-based) --------------
-# Same rag.py engine as Implementation/Support Expert, but the knowledge
-# base folder is chosen per-client at request time (knowledge/project_knowledge/
-# <client_id>/), and documents are added via upload rather than pre-loaded —
-# this is the one expert scoped to a single customer's own documents.
+# --- Project Knowledge Expert (RAG, per-client, upload-based) — Groq ----
 
 PROJECT_KNOWLEDGE_ROOT = "project_knowledge"
 
@@ -301,8 +305,6 @@ async def upload_project_document(client_id: str = Form(...), file: UploadFile =
     contents = await file.read()
     (client_folder / file.filename).write_bytes(contents)
 
-    # The knowledge base for this client is now stale (missing the new
-    # document) — drop it from the cache so the next question rebuilds it.
     invalidate_knowledge_base(f"{PROJECT_KNOWLEDGE_ROOT}/{safe_client_id}")
 
     return {"status": "uploaded", "filename": file.filename, "client_id": safe_client_id}
@@ -333,18 +335,16 @@ def project_knowledge_expert(req: ProjectKnowledgeRequest):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
-    if not GEMINI_API_KEY:
+    if not GROQ_API_KEY:
         return ExpertResponse(
             reply=(
-                "Demo mode: no GEMINI_API_KEY is set yet, so I can't call the real "
+                "Demo mode: no GROQ_API_KEY is set yet, so I can't call the real "
                 "model. Upload and retrieval are wired up — add your key to "
                 "backend/.env and this will answer for real."
             ),
             sources=[],
         )
     try:
-        from google import genai
-
         kb = get_knowledge_base(f"{PROJECT_KNOWLEDGE_ROOT}/{safe_client_id}")
         relevant_chunks = kb.search(req.question, top_k=5)
 
@@ -363,17 +363,16 @@ def project_knowledge_expert(req: ProjectKnowledgeRequest):
             relevant_chunks,
         )
 
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        response = generate_with_retry(client, model=GEMINI_MODEL, contents=prompt)
+        client = Groq(api_key=GROQ_API_KEY)
+        response = groq_generate(client, model=GROQ_MODEL, messages=[{"role": "user", "content": prompt}])
 
         sources = sorted({c["source"] for c in relevant_chunks})
-        return ExpertResponse(reply=response.text, sources=sources)
+        return ExpertResponse(reply=response.choices[0].message.content, sources=sources)
     except Exception as exc:
-        return ExpertResponse(reply=friendly_error_message(exc), sources=[])
+        return ExpertResponse(reply=groq_friendly_error(exc), sources=[])
 
 
-# --- Document Generator (template filling — deliberately NOT AI-based) ----
-# See document_generator.py for why this expert doesn't call Gemini at all.
+# --- Document Generator (template filling — NOT AI-based, unaffected) ---
 
 @app.get("/api/document-generator/templates")
 def get_document_templates():
@@ -393,32 +392,22 @@ def generate_document_endpoint(req: DocumentGenerateRequest):
         raise HTTPException(status_code=404, detail=str(exc))
 
 
-# --- Unified Chat (routes to BI / Implementation / Support internally) ----
-# This is what the main chat screen actually calls now. The user never picks
-# an expert — a lightweight classification step decides which one handles
-# each message, and the licensing check runs before anything answers, so an
-# unlicensed category returns a clean "not authorized" message instead of
-# revealing which internal expert would have handled it.
-#
-# Project Knowledge Expert and Document Generator are deliberately NOT part
-# of this auto-routing: one needs a specific client/document selected, the
-# other needs a structured form. Both stay as their own explicit pages —
-# hiding *which conversational expert* answers is a very different thing
-# from hiding *tools that need their own UI*.
+# --- Unified Chat (routes to BI / Implementation / Support internally) ---
+# Routing/classification, Implementation, Support, and general chat all
+# run on Groq now, with local embeddings for search. Only bi_expert
+# (unreachable, unlicensed) still touches Gemini, via _unified_bi_answer.
 
 def classify_intent(message: str, history: list[dict]) -> str:
-    from google import genai
-
-    client = genai.Client(api_key=GEMINI_API_KEY)
+    client = Groq(api_key=GROQ_API_KEY)
     history_text = "\n".join(f"{h['role']}: {h['content']}" for h in history[-6:])
 
     prompt = f"""Classify the user's latest message into exactly one category.
 Respond with ONLY the category word, nothing else — no punctuation, no explanation.
 
 Categories:
-- bi_expert: questions about stock/inventory levels, order status, or finding a screen/menu in the ERP
+- bi_expert: asking for a CURRENT live value — e.g. "what's the stock of X", "what's the status of order #123", or asking which menu/screen to use for a task
 - implementation_expert: questions about setup, configuration steps, or gap analysis for ERP modules
-- support_expert: questions about troubleshooting, incidents, errors, or root causes of problems
+- support_expert: questions about WHY something went wrong, an error, an incident, or a root cause — even if the question also mentions stock, inventory, or orders. If the question describes a problem or asks "why would X happen", it is support_expert, not bi_expert, regardless of which words appear in it.
 - general: greetings, small talk, or anything that doesn't clearly fit the above
 
 Recent conversation:
@@ -428,17 +417,14 @@ Latest message: {message}
 
 Category:"""
 
-    response = generate_with_retry(client, model=GEMINI_MODEL, contents=prompt)
-    category = response.text.strip().lower()
+    response = groq_generate(client, model=GROQ_MODEL, messages=[{"role": "user", "content": prompt}])
+    category = response.choices[0].message.content.strip().lower()
     valid = {"bi_expert", "implementation_expert", "support_expert", "general"}
     return category if category in valid else "general"
 
 
 def _unified_bi_answer(message: str, history: list[dict]) -> tuple[str, list[str]]:
-    """Same function-calling logic as /api/chat, but history is folded into
-    the prompt text instead of using previous_interaction_id — since a
-    unified conversation can jump between expert types turn to turn, a
-    single Gemini-side interaction thread isn't a clean fit here."""
+    """Unreachable while bi_expert is unlicensed — stays on Gemini."""
     from google import genai
 
     client = genai.Client(api_key=GEMINI_API_KEY)
@@ -470,8 +456,6 @@ def _unified_bi_answer(message: str, history: list[dict]) -> tuple[str, list[str
 
 
 def _unified_rag_answer(kb_name: str, expert_label: str, message: str, history: list[dict]) -> str:
-    from google import genai
-
     kb = get_knowledge_base(kb_name)
     relevant_chunks = kb.search(message, top_k=5)
 
@@ -479,14 +463,12 @@ def _unified_rag_answer(kb_name: str, expert_label: str, message: str, history: 
     question_with_context = f"Recent conversation:\n{history_text}\n\nCurrent question: {message}" if history else message
 
     prompt = build_answer_prompt(expert_label, question_with_context, relevant_chunks)
-    client = genai.Client(api_key=GEMINI_API_KEY)
-    response = generate_with_retry(client, model=GEMINI_MODEL, contents=prompt)
-    return response.text
+    client = Groq(api_key=GROQ_API_KEY)
+    response = groq_generate(client, model=GROQ_MODEL, messages=[{"role": "user", "content": prompt}])
+    return response.choices[0].message.content
 
 
 def _unified_general_answer(message: str, history: list[dict]) -> str:
-    from google import genai
-
     history_text = "\n".join(f"{h['role']}: {h['content']}" for h in history[-6:])
     prompt = (
         f"You are SPI Assistant, a helpful ERP assistant for D-Biz Solutions. "
@@ -495,16 +477,14 @@ def _unified_general_answer(message: str, history: list[dict]) -> str:
         else f"You are SPI Assistant, a helpful ERP assistant for D-Biz Solutions. "
         f"Respond naturally and briefly.\n\nMessage: {message}"
     )
-    from google import genai
-
-    client = genai.Client(api_key=GEMINI_API_KEY)
-    response = generate_with_retry(client, model=GEMINI_MODEL, contents=prompt)
-    return response.text
+    client = Groq(api_key=GROQ_API_KEY)
+    response = groq_generate(client, model=GROQ_MODEL, messages=[{"role": "user", "content": prompt}])
+    return response.choices[0].message.content
 
 
 class UnifiedChatRequest(BaseModel):
     message: str
-    history: list[dict] = []  # [{"role": "user"|"assistant", "content": "..."}]
+    history: list[dict] = []
 
 
 class UnifiedChatResponse(BaseModel):
@@ -520,10 +500,10 @@ NOT_AUTHORIZED_MESSAGE = (
 
 @app.post("/api/unified-chat", response_model=UnifiedChatResponse)
 def unified_chat(req: UnifiedChatRequest):
-    if not GEMINI_API_KEY:
+    if not GROQ_API_KEY:
         return UnifiedChatResponse(
             reply=(
-                "Demo mode: no GEMINI_API_KEY is set yet, so I can't call the real "
+                "Demo mode: no GROQ_API_KEY is set yet, so I can't call the real "
                 "model. The routing and licensing pipeline are wired up — add your "
                 "key to backend/.env and this will answer for real."
             ),
@@ -548,14 +528,10 @@ def unified_chat(req: UnifiedChatRequest):
             reply = _unified_general_answer(req.message, req.history)
             return UnifiedChatResponse(reply=reply, trace=[])
     except Exception as exc:
-        return UnifiedChatResponse(reply=friendly_error_message(exc), trace=[])
+        return UnifiedChatResponse(reply=groq_friendly_error(exc), trace=[])
 
 
-# --- Voice input (transcription, including Urdu) ---------------------------
-# Gemini's audio understanding is multilingual out of the box — a single
-# call handles both English and Urdu speech, so no separate Urdu-specific
-# pipeline is needed. The transcript is returned in its original language
-# and script, then fed into /api/unified-chat exactly like typed text.
+# --- Voice input (transcription, including Urdu) — stays on Gemini -------
 
 @app.post("/api/transcribe")
 async def transcribe_audio(file: UploadFile = File(...)):
@@ -569,7 +545,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
         mime_type = file.content_type or "audio/webm"
 
         client = genai.Client(api_key=GEMINI_API_KEY)
-        response = generate_with_retry(
+        response = gemini_generate(
             client,
             model=GEMINI_MODEL,
             contents=[
@@ -581,9 +557,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
         )
         return {"transcript": response.text.strip()}
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=friendly_error_message(exc))
+        raise HTTPException(status_code=500, detail=gemini_friendly_error(exc))
 
 
-frontend_dir = Path(__file__).resolve().parent.parent.parent / "spi-chatbot-react" / "dist"
 if frontend_dir.exists():
     app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")

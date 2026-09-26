@@ -1,7 +1,8 @@
 fastapi
 uvicorn[standard]
-groq
 google-genai
+groq
 python-dotenv
 pydantic
 python-multipart
+fastembed
