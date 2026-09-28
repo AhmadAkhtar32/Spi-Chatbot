@@ -4,6 +4,21 @@ import { API_BASE } from '../api.js'
 
 const MAX_CHARS = 2000
 
+// Small hook so the placeholder can be shorter on phones
+function useIsMobile(breakpoint = 640) {
+  const query = `(max-width: ${breakpoint - 1}px)`
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(query).matches
+  )
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const onChange = (e) => setIsMobile(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [query])
+  return isMobile
+}
+
 export default function MessageInput({ onSend, disabled, value, onValueChange, onClear, hasMessages }) {
   const [internalValue, setInternalValue] = useState('')
   const [isRecording, setIsRecording] = useState(false)
@@ -12,6 +27,7 @@ export default function MessageInput({ onSend, disabled, value, onValueChange, o
   const textareaRef = useRef(null)
   const mediaRecorderRef = useRef(null)
   const audioChunksRef = useRef([])
+  const isMobile = useIsMobile()
 
   // Supports being driven externally (e.g. a suggested prompt pre-filling
   // the box) while still working as an ordinary controlled input.
@@ -102,21 +118,34 @@ export default function MessageInput({ onSend, disabled, value, onValueChange, o
     }
   }
 
+  const placeholder = isRecording
+    ? 'Listening... (English or Urdu)'
+    : isTranscribing
+      ? 'Transcribing...'
+      : isMobile
+        ? 'Ask SPI anything…'
+        : 'Ask about inventory, sales, finance, payroll or ERP navigation...'
+
   return (
-    <form onSubmit={submit} className="shrink-0 border-t border-border bg-surface px-6 py-3.5">
+    <form
+      onSubmit={submit}
+      className="shrink-0 border-t border-border bg-surface px-3 sm:px-6 pt-2.5 sm:pt-3.5
+                 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:pb-[max(0.875rem,env(safe-area-inset-bottom))]"
+    >
       <div className="max-w-3xl mx-auto">
-        <div className="flex items-end gap-2">
+        <div className="flex items-end gap-1.5 sm:gap-2">
+          {/* Attachment button is disabled ("coming soon"), so hide it on phones to save space */}
           <button
             type="button"
             disabled
             title="Attachments coming soon"
-            className="h-10 w-10 shrink-0 rounded-md border border-border bg-bg
-                       flex items-center justify-center text-ink-secondary/50 cursor-not-allowed mb-[3px]"
+            className="hidden sm:flex h-10 w-10 shrink-0 rounded-md border border-border bg-bg
+                       items-center justify-center text-ink-secondary/50 cursor-not-allowed mb-[3px]"
           >
             <Paperclip className="w-4 h-4" strokeWidth={2} />
           </button>
 
-          <div className="flex-1 relative">
+          <div className="flex-1 min-w-0 relative">
             <textarea
               ref={textareaRef}
               rows={1}
@@ -124,15 +153,11 @@ export default function MessageInput({ onSend, disabled, value, onValueChange, o
               maxLength={MAX_CHARS}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={
-                isRecording
-                  ? 'Listening... (English or Urdu)'
-                  : isTranscribing
-                    ? 'Transcribing...'
-                    : 'Ask about inventory, sales, finance, payroll or ERP navigation...'
-              }
+              placeholder={placeholder}
               disabled={isTranscribing}
-              className="w-full resize-none px-4 py-2.5 rounded-md border border-border bg-bg text-[14px] text-ink
+              /* text-base (16px) on mobile stops iOS Safari from zooming in on focus */
+              className="w-full min-w-0 resize-none px-3 sm:px-4 py-2.5 rounded-md border border-border bg-bg
+                         text-[16px] sm:text-[14px] text-ink
                          placeholder:text-ink-secondary/60 focus:outline-none focus:border-primary
                          focus:bg-surface transition-colors leading-relaxed disabled:opacity-60"
               style={{ minHeight: '40px', maxHeight: '160px' }}
@@ -144,6 +169,7 @@ export default function MessageInput({ onSend, disabled, value, onValueChange, o
             onClick={toggleRecording}
             disabled={isTranscribing}
             title={isRecording ? 'Stop recording' : 'Speak in English or Urdu'}
+            aria-label={isRecording ? 'Stop recording' : 'Start voice input'}
             className={`h-10 w-10 shrink-0 rounded-md border flex items-center justify-center transition-colors mb-[3px]
               ${
                 isRecording
@@ -173,12 +199,12 @@ export default function MessageInput({ onSend, disabled, value, onValueChange, o
           </button>
         </div>
 
-        <div className="flex items-center justify-between mt-1.5 px-1">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2 mt-1.5 px-1">
+          <div className="flex items-center gap-3 min-w-0">
             {voiceError ? (
-              <span className="text-[11px] text-danger">{voiceError}</span>
+              <span className="text-[11px] text-danger truncate">{voiceError}</span>
             ) : (
-              <span className="text-[11px] text-ink-secondary/70">
+              <span className="hidden sm:inline text-[11px] text-ink-secondary/70">
                 Enter to send &middot; Shift+Enter for new line &middot; Mic supports Urdu
               </span>
             )}
@@ -186,14 +212,14 @@ export default function MessageInput({ onSend, disabled, value, onValueChange, o
               <button
                 type="button"
                 onClick={onClear}
-                className="flex items-center gap-1 text-[11px] text-ink-secondary/70 hover:text-danger transition-colors"
+                className="flex items-center gap-1 text-[11px] text-ink-secondary/70 hover:text-danger transition-colors shrink-0"
               >
                 <X className="w-3 h-3" />
                 Clear conversation
               </button>
             )}
           </div>
-          <span className="text-[11px] text-ink-secondary/50 tabular-nums">
+          <span className="text-[11px] text-ink-secondary/50 tabular-nums shrink-0">
             {text.length}/{MAX_CHARS}
           </span>
         </div>

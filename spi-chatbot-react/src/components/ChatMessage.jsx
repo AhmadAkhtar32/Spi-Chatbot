@@ -66,8 +66,8 @@ export default function ChatMessage({ role, content, trace, sources, timestamp, 
 
   if (isUser) {
     return (
-      <div className="flex flex-col items-end animate-fade-in">
-        <div className="max-w-[75%] bg-primary/8 border border-primary/15 rounded-lg px-4 py-2.5 text-[14px] text-ink">
+      <div className="flex flex-col items-end animate-fade-in min-w-0">
+        <div className="max-w-[88%] sm:max-w-[75%] min-w-0 bg-primary/8 border border-primary/15 rounded-lg px-3.5 sm:px-4 py-2.5 text-[14px] text-ink whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
           {content}
         </div>
         {time && <span className="text-[11px] text-ink-secondary/70 mt-1 mr-0.5">{time}</span>}
@@ -76,10 +76,10 @@ export default function ChatMessage({ role, content, trace, sources, timestamp, 
   }
 
   return (
-    <div className="flex flex-col items-start animate-fade-in">
-      <div className="max-w-[80%] group relative card px-4 py-3">
+    <div className="flex flex-col items-start animate-fade-in min-w-0">
+      <div className="max-w-[96%] sm:max-w-[85%] lg:max-w-[80%] min-w-0 group relative card px-3.5 sm:px-4 py-3">
         {trace && trace.length > 0 && (
-          <div className="text-[11px] font-mono text-ink-secondary/80 mb-2 pb-2 border-b border-border">
+          <div className="text-[11px] font-mono text-ink-secondary/80 mb-2 pb-2 border-b border-border break-words">
             {trace.join(', ')}
           </div>
         )}
@@ -97,7 +97,7 @@ export default function ChatMessage({ role, content, trace, sources, timestamp, 
             {sources.map((s) => (
               <span
                 key={s}
-                className="text-[11px] font-mono text-ink-secondary bg-bg border border-border rounded px-1.5 py-0.5"
+                className="text-[11px] font-mono text-ink-secondary bg-bg border border-border rounded px-1.5 py-0.5 break-all"
               >
                 {s}
               </span>
@@ -105,7 +105,8 @@ export default function ChatMessage({ role, content, trace, sources, timestamp, 
           </div>
         )}
 
-        <div className="flex items-center gap-1 mt-2.5 pt-2.5 border-t border-border opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Always visible on touch devices (no hover); hover-reveal on desktop */}
+        <div className="flex items-center gap-1 mt-2.5 pt-2.5 border-t border-border md:opacity-0 md:group-hover:opacity-100 transition-opacity">
           <MiniButton onClick={handleCopy} title="Copy response">
             {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
           </MiniButton>
@@ -136,7 +137,8 @@ function MiniButton({ children, onClick, title }) {
     <button
       onClick={onClick}
       title={title}
-      className="w-6 h-6 rounded-md flex items-center justify-center text-ink-secondary hover:bg-slate-50 hover:text-ink transition-colors"
+      aria-label={title}
+      className="w-7 h-7 sm:w-6 sm:h-6 rounded-md flex items-center justify-center text-ink-secondary hover:bg-slate-50 hover:text-ink transition-colors"
     >
       {children}
     </button>
