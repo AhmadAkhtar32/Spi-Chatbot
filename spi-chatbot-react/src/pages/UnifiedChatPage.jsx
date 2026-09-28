@@ -157,7 +157,7 @@ export default function UnifiedChatPage() {
           onValueChange={setInputValue}
           onClear={handleClear}
           hasMessages={hasMessages}
-          placeholder={PLACEHOLDER}
+                    inputPlaceholder={PLACEHOLDER}
         />
       </div>
     </div>
