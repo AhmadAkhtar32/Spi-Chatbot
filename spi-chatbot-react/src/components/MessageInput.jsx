@@ -19,7 +19,7 @@ function useIsMobile(breakpoint = 640) {
   return isMobile
 }
 
-export default function MessageInput({ onSend, disabled, value, onValueChange, onClear, hasMessages }) {
+export default function MessageInput({ onSend, disabled, value, onValueChange, onClear, hasMessages, placeholder }) {
   const [internalValue, setInternalValue] = useState('')
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
@@ -124,7 +124,7 @@ export default function MessageInput({ onSend, disabled, value, onValueChange, o
       ? 'Transcribing...'
       : isMobile
         ? 'Ask SPI anything…'
-        : 'Ask about inventory, sales, finance, payroll or ERP navigation...'
+        : placeholder || 'Type your question...'
 
   return (
     <form

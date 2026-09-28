@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { PackageSearch, ClipboardList, Compass, LifeBuoy } from 'lucide-react'
+import { FileText, BookOpen, BarChart3, Copy } from 'lucide-react'
 import ChatMessage from '../components/ChatMessage.jsx'
 import TypingIndicator from '../components/TypingIndicator.jsx'
 import MessageInput from '../components/MessageInput.jsx'
@@ -16,12 +16,50 @@ function getGreeting() {
   return 'Good evening'
 }
 
-const SUGGESTIONS = [
-  { icon: PackageSearch, label: 'Check stock availability', prompt: "What's the stock of Pepsi?" },
-  { icon: ClipboardList, label: 'Order status', prompt: "What's the status of order #1234?" },
-  { icon: Compass, label: 'Find a screen', prompt: 'Where do I create a purchase order?' },
-  { icon: LifeBuoy, label: 'Troubleshoot an issue', prompt: 'Why would a user get logged out randomly?' },
+// Modules this user is licensed for. Hardcoded to Financials for now;
+// later this will come from the backend license check instead.
+const LICENSED_MODULES = ['financials']
+
+const MODULE_LABELS = {
+  financials: 'Financials',
+  inventory: 'Inventory',
+  payroll: 'Payroll',
+}
+
+// Every suggestion is tagged with the module it belongs to, and only the
+// ones for licensed modules are shown. Add inventory/payroll entries here
+// later and they appear automatically once the module is licensed.
+const ALL_SUGGESTIONS = [
+  {
+    module: 'financials',
+    icon: FileText,
+    label: 'Set up a voucher type',
+    prompt: 'How do I set up a GL voucher?',
+  },
+  {
+    module: 'financials',
+    icon: BookOpen,
+    label: 'Chart of Accounts',
+    prompt: 'What is the maximum length of an account code in the Chart of Accounts?',
+  },
+  {
+    module: 'financials',
+    icon: BarChart3,
+    label: 'Trial balance',
+    prompt: 'What does the Trial Balance report show and how do I run it?',
+  },
+  {
+    module: 'financials',
+    icon: Copy,
+    label: 'Default vouchers',
+    prompt: 'How do I save a voucher as a default voucher for repeated entries?',
+  },
 ]
+
+const licensedLabels = LICENSED_MODULES.map((m) => MODULE_LABELS[m]).filter(Boolean)
+const SUGGESTIONS = ALL_SUGGESTIONS.filter((s) => LICENSED_MODULES.includes(s.module))
+const SUBTITLE = `Ask about setup, usage, and troubleshooting for ${licensedLabels.join(', ')}.`
+const PLACEHOLDER = `Ask about ${licensedLabels.join(', ')}...`
 
 export default function UnifiedChatPage() {
   const { messages, setMessages } = useOutletContext()
@@ -87,7 +125,7 @@ export default function UnifiedChatPage() {
             {getGreeting()}
           </motion.h1>
           <p className="text-[13.5px] text-ink-secondary mb-7 text-center max-w-md leading-relaxed">
-            Ask anything about inventory, orders, ERP navigation, setup, or troubleshooting.
+            {SUBTITLE}
           </p>
           <div className="flex flex-wrap justify-center gap-2 max-w-lg">
             {SUGGESTIONS.map((s) => (
@@ -119,6 +157,7 @@ export default function UnifiedChatPage() {
           onValueChange={setInputValue}
           onClear={handleClear}
           hasMessages={hasMessages}
+          placeholder={PLACEHOLDER}
         />
       </div>
     </div>
