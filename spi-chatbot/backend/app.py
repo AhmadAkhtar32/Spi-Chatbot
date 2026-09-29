@@ -144,25 +144,16 @@ def get_knowledge_base(name: str) -> KnowledgeBase:
 
 
 def licensing_gate(chunks: list[dict], expert_id: str) -> str | None:
-    """Shared licensing/relevance check for a RAG expert's search results.
-
-    Returns a message to show the user (either NOT_AUTHORIZED_MESSAGE or
-    OUT_OF_CONTEXT_MESSAGE) if the question can't be answered as-is, or
-    None if it's fine to proceed to generation.
-
-    Logic: look at the single best-matching chunk across ALL modules
-    (not pre-filtered) to find out what the question is actually about.
-    If that module isn't one the user is licensed for, this is a real
-    access issue -> not authorized. If it IS licensed but the match is
-    too weak, the topic just isn't covered -> out of context, not a
-    licensing problem. Experts with no module structure skip the module
-    check entirely and only apply the relevance threshold.
-    """
     if not chunks:
+        logging.info("licensing_gate[%s]: no chunks found", expert_id)
         return OUT_OF_CONTEXT_MESSAGE
 
     allowed_modules = licensed_modules_for(expert_id)
     top_chunk = chunks[0]
+    logging.info(
+        "licensing_gate[%s]: top_score=%.3f top_module=%s top_source=%s",
+        expert_id, top_chunk["score"], top_chunk.get("module"), top_chunk.get("source"),
+    )
 
     if allowed_modules:
         top_module = top_chunk.get("module", "general")
@@ -519,12 +510,12 @@ def classify_intent(message: str, history: list[dict]) -> str:
 Respond with ONLY the category word, nothing else — no punctuation, no explanation.
 
 Categories:
-- bi_expert: asking for a CURRENT live value from the system right now — e.g. "what's my current GL balance", "what's the stock of X", "what's the status of order #123". This is ONLY for live data lookups, never for how something works or is configured.
-- implementation_expert: HOW to set up, configure, or use a module or feature (e.g. "how do I set up a GL voucher", "what is the Chart of Accounts account code limit"), including gap analysis.
-- support_expert: WHY something went wrong, an error, an incident, or a root cause — even if it mentions GL, vouchers, inventory, or payroll. If the question describes a problem, an error, or asks "why would X happen" or "X isn't working", it is support_expert.
-- general: greetings, small talk, or anything that doesn't clearly fit the above
+- bi_expert: asking for a CURRENT live value from SPI itself right now — e.g. "what's my current GL balance", "what's the stock of X", "what's the status of order #123". Only for live SPI data lookups, never for how something works or is configured, and never for anything unrelated to SPI.
+- implementation_expert: HOW to set up, configure, or use a module or feature in SPI (e.g. "how do I set up a GL voucher", "what is the Chart of Accounts account code limit"), including gap analysis.
+- support_expert: WHY something went wrong, an error, an incident, or a root cause in SPI — even if it mentions GL, vouchers, inventory, or payroll. If the question describes a problem, an error, or asks "why would X happen" or "X isn't working", it is support_expert.
+- general: greetings, small talk, or ANYTHING not clearly about SPI itself (e.g. the weather, unrelated topics, or anything that doesn't fit the categories above)
 
-Mentioning GL, vouchers, ledgers, inventory, or payroll does NOT by itself mean bi_expert — only a request for a live, current number or status does. When in doubt between bi_expert and implementation_expert/support_expert, prefer implementation_expert or support_expert.
+Mentioning GL, vouchers, ledgers, inventory, or payroll does NOT by itself mean bi_expert — only a request for a live, current number or status from SPI does. If the message isn't about SPI at all, it is general, not bi_expert. When in doubt between bi_expert and implementation_expert/support_expert, prefer implementation_expert or support_expert.
 
 Recent conversation:
 {history_text}

@@ -31,28 +31,40 @@ const MODULE_LABELS = {
 // later and they appear automatically once the module is licensed.
 const ALL_SUGGESTIONS = [
   {
-    module: 'financials',
+    module: 'financial',
     icon: FileText,
     label: 'Set up a voucher type',
-    prompt: 'How do I set up a GL voucher?',
+    prompt: 'How do I set up a GL voucher type?',
   },
   {
-    module: 'financials',
+    module: 'financial',
     icon: BookOpen,
     label: 'Chart of Accounts',
     prompt: 'What is the maximum length of an account code in the Chart of Accounts?',
   },
   {
-    module: 'financials',
-    icon: BarChart3,
-    label: 'Trial balance',
-    prompt: 'What does the Trial Balance report show and how do I run it?',
-  },
-  {
-    module: 'financials',
+    module: 'financial',
     icon: Copy,
     label: 'Default vouchers',
     prompt: 'How do I save a voucher as a default voucher for repeated entries?',
+  },
+  {
+    module: 'financial',
+    icon: RotateCcw,
+    label: 'Reverse a posted voucher',
+    prompt: 'A voucher was posted by mistake — can it be reversed, and how?',
+  },
+  {
+    module: 'financial',
+    icon: BarChart3,
+    label: 'Month-end slowness',
+    prompt: 'Why does SPI slow down specifically during month-end close?',
+  },
+  {
+    module: 'financial',
+    icon: AlertCircle,
+    label: 'Blank report results',
+    prompt: 'Why would a report return blank results even though data clearly exists?',
   },
 ]
 
