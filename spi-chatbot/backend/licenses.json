@@ -1,11 +1,25 @@
 {
-  "_comment": "License/entitlement config for the unified chat router. Since there's no login system yet, this represents a single 'current_user' profile — once real authentication exists, this becomes a per-client/per-user lookup instead of one fixed entry. 'false' means the router refuses to answer that category and returns a not-authorized message instead, without revealing which internal expert would have handled it. Per current instructions: this demo user is licensed for Implementation and Support only — BI Expert questions (stock/orders/navigation) are deliberately NOT authorized.",
+  "_comment": "License/entitlement config for the unified chat router. Since there's no login system yet, this represents a single 'current_user' profile — once real authentication exists, this becomes a per-client/per-user lookup instead of one fixed entry. bi_expert is a plain boolean (not licensed yet). implementation_expert and support_expert now carry an 'enabled' flag plus a 'modules' map, so licensing can distinguish 'not authorized for this module' from 'authorized, but this isn't in our documents'. Module keys are filename-based placeholders (financial/inventory/payroll/general) pending the real documentation map.",
 
   "current_user": {
     "bi_expert": false,
-    "implementation_expert": true,
-    "support_expert": true,
+    "implementation_expert": {
+      "enabled": true,
+      "modules": {
+        "financial": true,
+        "inventory": false,
+        "payroll": false
+      }
+    },
+    "support_expert": {
+      "enabled": true,
+      "modules": {
+        "financial": true,
+        "inventory": false,
+        "payroll": false
+      }
+    },
     "project_knowledge_expert": true,
-    "document_generator": true
+    "document_generator": false
   }
 }

@@ -33,11 +33,9 @@ load_dotenv()
 # Two providers, two roles:
 #   - Groq handles Implementation Expert, Support Expert, and Unified
 #     Chat's routing/general-chat text generation.
-#   - Embeddings for RAG search run locally (see rag.py) — no external
-#     API at all, which removes the embedding-quota bottleneck entirely.
-#     (Note: this means sentence-transformers/torch must be deployed
-#     wherever this backend runs — see the deployment notes before
-#     pushing this to Vercel, since that's a real size constraint there.)
+#   - Embeddings for RAG search run locally via fastembed (see rag.py) —
+#     no external API at all, which removes the embedding-quota
+#     bottleneck that Gemini's and Mistral's free tiers both hit.
 #   - Gemini stays in place for voice transcription (audio understanding)
 #     and the BI/function-calling path, since neither has a proven,
 #     drop-in Groq equivalent, and BI is unreachable anyway while it's
@@ -52,9 +50,59 @@ KNOWLEDGE_DIR = Path(__file__).resolve().parent / "knowledge"
 # License config — see licenses.json. There's no login system yet, so this
 # is a single fixed "current_user" profile rather than a real per-user
 # lookup; that's the one piece a real auth system would replace later.
+#
+# implementation_expert and support_expert now carry an "enabled" flag
+# plus a per-module map (financial/inventory/payroll), so licensing can
+# distinguish "not authorized for this module" from "authorized, but
+# this isn't in our documents" — see is_expert_enabled() and
+# licensed_modules_for() below. bi_expert, project_knowledge_expert, and
+# document_generator stay plain booleans (no module concept yet).
 with open(Path(__file__).resolve().parent / "licenses.json") as f:
     _LICENSES = json.load(f)
 CURRENT_USER_LICENSE = _LICENSES.get("current_user", {})
+
+
+def is_expert_enabled(expert_id: str) -> bool:
+    """Whether this user can use this expert at all — works for both the
+    plain-boolean experts (bi_expert, project_knowledge_expert,
+    document_generator) and the module-structured ones (implementation_
+    expert, support_expert), which store {"enabled": ..., "modules": ...}."""
+    entry = CURRENT_USER_LICENSE.get(expert_id, False)
+    if isinstance(entry, dict):
+        return entry.get("enabled", False)
+    return bool(entry)
+
+
+def licensed_modules_for(expert_id: str) -> set[str]:
+    """Which modules (financial/inventory/payroll) this user may access
+    within a module-structured expert. Returns an empty set for experts
+    that don't have module-level granularity at all."""
+    entry = CURRENT_USER_LICENSE.get(expert_id, {})
+    if isinstance(entry, dict):
+        modules = entry.get("modules", {})
+        return {name for name, allowed in modules.items() if allowed}
+    return set()
+
+
+# Messages shown for the two distinct "can't answer" cases — kept
+# separate on purpose per the licensing requirement: one means "you
+# don't have access to this data," the other means "you have access,
+# but this genuinely isn't in our records."
+NOT_AUTHORIZED_MESSAGE = (
+    "You are not authorized to access this information. Please contact "
+    "your administrator to request access to this module."
+)
+
+OUT_OF_CONTEXT_MESSAGE = (
+    "Your question appears to be out of context, or the related "
+    "information is not present in our records."
+)
+
+# Minimum top-chunk similarity score to treat a question as "covered by
+# our documents." This is a starting estimate, not a verified number —
+# it needs calibrating against real in-scope and out-of-scope questions
+# once this is running, then adjusted based on the actual scores seen.
+RELEVANCE_THRESHOLD = 0.35
 
 app = FastAPI(title="SPI Assistant API")
 
@@ -93,6 +141,50 @@ def get_knowledge_base(name: str) -> KnowledgeBase:
     if name not in _knowledge_bases:
         _knowledge_bases[name] = KnowledgeBase(KNOWLEDGE_DIR / name)
     return _knowledge_bases[name]
+
+
+def licensing_gate(chunks: list[dict], expert_id: str) -> str | None:
+    """Shared licensing/relevance check for a RAG expert's search results.
+
+    Returns a message to show the user (either NOT_AUTHORIZED_MESSAGE or
+    OUT_OF_CONTEXT_MESSAGE) if the question can't be answered as-is, or
+    None if it's fine to proceed to generation.
+
+    Logic: look at the single best-matching chunk across ALL modules
+    (not pre-filtered) to find out what the question is actually about.
+    If that module isn't one the user is licensed for, this is a real
+    access issue -> not authorized. If it IS licensed but the match is
+    too weak, the topic just isn't covered -> out of context, not a
+    licensing problem. Experts with no module structure skip the module
+    check entirely and only apply the relevance threshold.
+    """
+    if not chunks:
+        return OUT_OF_CONTEXT_MESSAGE
+
+    allowed_modules = licensed_modules_for(expert_id)
+    top_chunk = chunks[0]
+
+    if allowed_modules:
+        top_module = top_chunk.get("module", "general")
+        if top_module != "general" and top_module not in allowed_modules:
+            return NOT_AUTHORIZED_MESSAGE
+
+    if top_chunk["score"] < RELEVANCE_THRESHOLD:
+        return OUT_OF_CONTEXT_MESSAGE
+
+    return None
+
+
+def filter_chunks_to_licensed_modules(chunks: list[dict], expert_id: str) -> list[dict]:
+    """Once licensing_gate has cleared a question, keep only chunks from
+    modules the user actually has access to (plus general/cross-cutting
+    ones) when building the answer — so the answer never draws on a
+    module the user isn't licensed for, even as supporting context."""
+    allowed_modules = licensed_modules_for(expert_id)
+    if not allowed_modules:
+        return chunks
+    return [c for c in chunks if c.get("module", "general") in allowed_modules or c.get("module") == "general"]
+
 
 TOOLS = [
     {
@@ -225,6 +317,8 @@ class ExpertResponse(BaseModel):
 
 @app.post("/api/implementation-expert", response_model=ExpertResponse)
 def implementation_expert(req: ExpertRequest):
+    if not is_expert_enabled("implementation_expert"):
+        return ExpertResponse(reply=NOT_AUTHORIZED_MESSAGE, sources=[])
     if not GROQ_API_KEY:
         return ExpertResponse(
             reply=(
@@ -237,12 +331,18 @@ def implementation_expert(req: ExpertRequest):
     try:
         kb = get_knowledge_base("implementation")
         relevant_chunks = kb.search(req.question, top_k=5)
-        prompt = build_answer_prompt("Implementation Expert", req.question, relevant_chunks)
+
+        gate_message = licensing_gate(relevant_chunks, "implementation_expert")
+        if gate_message:
+            return ExpertResponse(reply=gate_message, sources=[])
+
+        usable_chunks = filter_chunks_to_licensed_modules(relevant_chunks, "implementation_expert")
+        prompt = build_answer_prompt("Implementation Expert", req.question, usable_chunks)
 
         client = Groq(api_key=GROQ_API_KEY)
         response = groq_generate(client, model=GROQ_MODEL, messages=[{"role": "user", "content": prompt}])
 
-        sources = sorted({c["source"] for c in relevant_chunks})
+        sources = sorted({c["source"] for c in usable_chunks})
         return ExpertResponse(reply=response.choices[0].message.content, sources=sources)
     except Exception as exc:
         return ExpertResponse(reply=groq_friendly_error(exc), sources=[])
@@ -250,6 +350,8 @@ def implementation_expert(req: ExpertRequest):
 
 @app.post("/api/support-expert", response_model=ExpertResponse)
 def support_expert(req: ExpertRequest):
+    if not is_expert_enabled("support_expert"):
+        return ExpertResponse(reply=NOT_AUTHORIZED_MESSAGE, sources=[])
     if not GROQ_API_KEY:
         return ExpertResponse(
             reply=(
@@ -262,17 +364,23 @@ def support_expert(req: ExpertRequest):
     try:
         kb = get_knowledge_base("support")
         relevant_chunks = kb.search(req.question, top_k=5)
+
+        gate_message = licensing_gate(relevant_chunks, "support_expert")
+        if gate_message:
+            return ExpertResponse(reply=gate_message, sources=[])
+
+        usable_chunks = filter_chunks_to_licensed_modules(relevant_chunks, "support_expert")
         prompt = build_answer_prompt(
             "Support Expert — specializing in incident analysis, troubleshooting, "
             "and root cause suggestions",
             req.question,
-            relevant_chunks,
+            usable_chunks,
         )
 
         client = Groq(api_key=GROQ_API_KEY)
         response = groq_generate(client, model=GROQ_MODEL, messages=[{"role": "user", "content": prompt}])
 
-        sources = sorted({c["source"] for c in relevant_chunks})
+        sources = sorted({c["source"] for c in usable_chunks})
         return ExpertResponse(reply=response.choices[0].message.content, sources=sources)
     except Exception as exc:
         return ExpertResponse(reply=groq_friendly_error(exc), sources=[])
@@ -282,6 +390,8 @@ frontend_dir = Path(__file__).resolve().parent.parent.parent / "spi-chatbot-reac
 
 
 # --- Project Knowledge Expert (RAG, per-client, upload-based) — Groq ----
+# Not module-gated: each client's documents are already isolated by
+# client_id, so there's no cross-module licensing question here.
 
 PROJECT_KNOWLEDGE_ROOT = "project_knowledge"
 
@@ -330,6 +440,8 @@ class ProjectKnowledgeRequest(BaseModel):
 
 @app.post("/api/project-knowledge/chat", response_model=ExpertResponse)
 def project_knowledge_expert(req: ProjectKnowledgeRequest):
+    if not is_expert_enabled("project_knowledge_expert"):
+        return ExpertResponse(reply=NOT_AUTHORIZED_MESSAGE, sources=[])
     try:
         safe_client_id = sanitize_client_id(req.client_id)
     except ValueError as exc:
@@ -386,6 +498,8 @@ class DocumentGenerateRequest(BaseModel):
 
 @app.post("/api/document-generator/generate")
 def generate_document_endpoint(req: DocumentGenerateRequest):
+    if not is_expert_enabled("document_generator"):
+        raise HTTPException(status_code=403, detail=NOT_AUTHORIZED_MESSAGE)
     try:
         return generate_document(req.template_id, req.fields)
     except KeyError as exc:
@@ -405,10 +519,12 @@ def classify_intent(message: str, history: list[dict]) -> str:
 Respond with ONLY the category word, nothing else — no punctuation, no explanation.
 
 Categories:
-- bi_expert: asking for a CURRENT live value — e.g. "what's the stock of X", "what's the status of order #123", or asking which menu/screen to use for a task
-- implementation_expert: questions about setup, configuration steps, or gap analysis for ERP modules
-- support_expert: questions about WHY something went wrong, an error, an incident, or a root cause — even if the question also mentions stock, inventory, or orders. If the question describes a problem or asks "why would X happen", it is support_expert, not bi_expert, regardless of which words appear in it.
+- bi_expert: asking for a CURRENT live value from the system right now — e.g. "what's my current GL balance", "what's the stock of X", "what's the status of order #123". This is ONLY for live data lookups, never for how something works or is configured.
+- implementation_expert: HOW to set up, configure, or use a module or feature (e.g. "how do I set up a GL voucher", "what is the Chart of Accounts account code limit"), including gap analysis.
+- support_expert: WHY something went wrong, an error, an incident, or a root cause — even if it mentions GL, vouchers, inventory, or payroll. If the question describes a problem, an error, or asks "why would X happen" or "X isn't working", it is support_expert.
 - general: greetings, small talk, or anything that doesn't clearly fit the above
+
+Mentioning GL, vouchers, ledgers, inventory, or payroll does NOT by itself mean bi_expert — only a request for a live, current number or status does. When in doubt between bi_expert and implementation_expert/support_expert, prefer implementation_expert or support_expert.
 
 Recent conversation:
 {history_text}
@@ -456,13 +572,22 @@ def _unified_bi_answer(message: str, history: list[dict]) -> tuple[str, list[str
 
 
 def _unified_rag_answer(kb_name: str, expert_label: str, message: str, history: list[dict]) -> str:
+    """kb_name is 'implementation' or 'support', which also matches the
+    licenses.json key pattern ('<kb_name>_expert')."""
     kb = get_knowledge_base(kb_name)
     relevant_chunks = kb.search(message, top_k=5)
+
+    expert_id = f"{kb_name}_expert"
+    gate_message = licensing_gate(relevant_chunks, expert_id)
+    if gate_message:
+        return gate_message
+
+    usable_chunks = filter_chunks_to_licensed_modules(relevant_chunks, expert_id)
 
     history_text = "\n".join(f"{h['role']}: {h['content']}" for h in history[-6:])
     question_with_context = f"Recent conversation:\n{history_text}\n\nCurrent question: {message}" if history else message
 
-    prompt = build_answer_prompt(expert_label, question_with_context, relevant_chunks)
+    prompt = build_answer_prompt(expert_label, question_with_context, usable_chunks)
     client = Groq(api_key=GROQ_API_KEY)
     response = groq_generate(client, model=GROQ_MODEL, messages=[{"role": "user", "content": prompt}])
     return response.choices[0].message.content
@@ -492,12 +617,6 @@ class UnifiedChatResponse(BaseModel):
     trace: list[str] = []
 
 
-NOT_AUTHORIZED_MESSAGE = (
-    "You are not authorized to use this feature. Please contact your administrator "
-    "to upgrade your license."
-)
-
-
 @app.post("/api/unified-chat", response_model=UnifiedChatResponse)
 def unified_chat(req: UnifiedChatRequest):
     if not GROQ_API_KEY:
@@ -512,7 +631,7 @@ def unified_chat(req: UnifiedChatRequest):
     try:
         expert_id = classify_intent(req.message, req.history)
 
-        if expert_id != "general" and not CURRENT_USER_LICENSE.get(expert_id, False):
+        if expert_id != "general" and not is_expert_enabled(expert_id):
             return UnifiedChatResponse(reply=NOT_AUTHORIZED_MESSAGE, trace=[])
 
         if expert_id == "bi_expert":
