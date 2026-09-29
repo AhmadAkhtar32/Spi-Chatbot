@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { FileText, BookOpen, BarChart3, Copy } from 'lucide-react'
+import {
+  FileText,
+  BookOpen,
+  BarChart3,
+  Copy,
+  RotateCcw,
+  AlertCircle,
+} from 'lucide-react'
+
 import ChatMessage from '../components/ChatMessage.jsx'
 import TypingIndicator from '../components/TypingIndicator.jsx'
 import MessageInput from '../components/MessageInput.jsx'
@@ -11,13 +19,14 @@ import { API_BASE } from '../api.js'
 
 function getGreeting() {
   const hour = new Date().getHours()
+
   if (hour < 12) return 'Good morning'
   if (hour < 17) return 'Good afternoon'
   return 'Good evening'
 }
 
-// Modules this user is licensed for. Hardcoded to Financials for now;
-// later this will come from the backend license check instead.
+// Modules this user is licensed for.
+// Hardcoded to Financials for now.
 const LICENSED_MODULES = ['financials']
 
 const MODULE_LABELS = {
@@ -26,87 +35,148 @@ const MODULE_LABELS = {
   payroll: 'Payroll',
 }
 
-// Every suggestion is tagged with the module it belongs to, and only the
-// ones for licensed modules are shown. Add inventory/payroll entries here
-// later and they appear automatically once the module is licensed.
+// Suggestions available for each module.
 const ALL_SUGGESTIONS = [
   {
-    module: 'financial',
+    module: 'financials',
     icon: FileText,
+    category: 'Vouchers',
     label: 'Set up a voucher type',
+    description: 'Configure a GL voucher type for transactions.',
     prompt: 'How do I set up a GL voucher type?',
   },
   {
-    module: 'financial',
+    module: 'financials',
     icon: BookOpen,
-    label: 'Chart of Accounts',
-    prompt: 'What is the maximum length of an account code in the Chart of Accounts?',
+    category: 'Chart of Accounts',
+    label: 'Manage account codes',
+    description: 'Learn the account code length and structure.',
+    prompt:
+      'What is the maximum length of an account code in the Chart of Accounts?',
   },
   {
-    module: 'financial',
+    module: 'financials',
     icon: Copy,
-    label: 'Default vouchers',
-    prompt: 'How do I save a voucher as a default voucher for repeated entries?',
+    category: 'Vouchers',
+    label: 'Save default vouchers',
+    description: 'Create reusable templates for repeated entries.',
+    prompt:
+      'How do I save a voucher as a default voucher for repeated entries?',
   },
   {
-    module: 'financial',
+    module: 'financials',
     icon: RotateCcw,
+    category: 'Reversals',
     label: 'Reverse a posted voucher',
-    prompt: 'A voucher was posted by mistake — can it be reversed, and how?',
+    description: 'Correct a voucher that was posted by mistake.',
+    prompt:
+      'A voucher was posted by mistake — can it be reversed, and how?',
   },
   {
-    module: 'financial',
+    module: 'financials',
     icon: BarChart3,
+    category: 'Performance',
     label: 'Month-end slowness',
+    description: 'Troubleshoot performance during month-end close.',
     prompt: 'Why does SPI slow down specifically during month-end close?',
   },
   {
-    module: 'financial',
+    module: 'financials',
     icon: AlertCircle,
+    category: 'Reports',
     label: 'Blank report results',
-    prompt: 'Why would a report return blank results even though data clearly exists?',
+    description: 'Diagnose reports that return no visible data.',
+    prompt:
+      'Why would a report return blank results even though data clearly exists?',
   },
 ]
 
-const licensedLabels = LICENSED_MODULES.map((m) => MODULE_LABELS[m]).filter(Boolean)
-const SUGGESTIONS = ALL_SUGGESTIONS.filter((s) => LICENSED_MODULES.includes(s.module))
-const SUBTITLE = `Ask about setup, usage, and troubleshooting for ${licensedLabels.join(', ')}.`
+const licensedLabels = LICENSED_MODULES
+  .map((module) => MODULE_LABELS[module])
+  .filter(Boolean)
+
+const SUGGESTIONS = ALL_SUGGESTIONS.filter((suggestion) =>
+  LICENSED_MODULES.includes(suggestion.module)
+)
+
+const SUBTITLE = `Ask about setup, usage, and troubleshooting for ${licensedLabels.join(
+  ', '
+)}.`
+
 const PLACEHOLDER = `Ask about ${licensedLabels.join(', ')}...`
 
 export default function UnifiedChatPage() {
   const { messages, setMessages } = useOutletContext()
+
   const [loading, setLoading] = useState(false)
   const [inputValue, setInputValue] = useState('')
+
   const scrollRef = useRef(null)
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: 'smooth',
+    })
   }, [messages, loading])
 
   async function handleSend(text) {
-    const newUserMessage = { role: 'user', content: text, timestamp: Date.now() }
+    if (!text?.trim() || loading) return
+
+    const newUserMessage = {
+      role: 'user',
+      content: text,
+      timestamp: Date.now(),
+    }
+
     setMessages((prev) => [...prev, newUserMessage])
     setLoading(true)
+
     try {
-      // Send recent history as plain {role, content} pairs — the backend
-      // uses this for context on every category, since a single Gemini
-      // interaction thread doesn't cleanly fit a conversation that can
-      // jump between different internal experts turn to turn.
-      const history = messages.slice(-8).map((m) => ({ role: m.role, content: m.content }))
+      // Send recent conversation history to the backend.
+      const history = messages
+        .slice(-8)
+        .map((message) => ({
+          role: message.role,
+          content: message.content,
+        }))
 
       const res = await fetch(`${API_BASE}/api/unified-chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, history }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: text,
+          history,
+        }),
       })
+
+      if (!res.ok) {
+        throw new Error(`Backend returned ${res.status}`)
+      }
+
       const data = await res.json()
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply, timestamp: Date.now() }])
-    } catch (err) {
+
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: 'Unable to reach the backend service. Confirm the API server is running.',
+          content:
+            data.reply ||
+            'I received an empty response from the backend service.',
+          timestamp: Date.now(),
+        },
+      ])
+    } catch (err) {
+      console.error('Chat request failed:', err)
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content:
+            'Unable to reach the backend service. Confirm the API server is running.',
           timestamp: Date.now(),
         },
       ])
@@ -117,6 +187,7 @@ export default function UnifiedChatPage() {
 
   function handleClear() {
     setMessages([])
+    setInputValue('')
   }
 
   const hasMessages = messages.length > 0
@@ -130,32 +201,82 @@ export default function UnifiedChatPage() {
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-            className="text-[28px] font-bold mb-2 tracking-tight text-center bg-gradient-to-r from-[#1E3A8A] via-primary to-[#1E3A8A]
-            bg-[length:200%_auto] bg-clip-text text-transparent animate-shimmer"
+            transition={{
+              duration: 0.5,
+              ease: 'easeOut',
+            }}
+            className="
+              text-[28px]
+              font-bold
+              mb-2
+              tracking-tight
+              text-center
+              bg-gradient-to-r
+              from-[#1E3A8A]
+              via-primary
+              to-[#1E3A8A]
+              bg-[length:200%_auto]
+              bg-clip-text
+              text-transparent
+              animate-shimmer
+            "
           >
             {getGreeting()}
           </motion.h1>
-          <p className="text-[13.5px] text-ink-secondary mb-7 text-center max-w-md leading-relaxed">
+
+          <p
+            className="
+              text-[13.5px]
+              text-ink-secondary
+              mb-7
+              text-center
+              max-w-md
+              leading-relaxed
+            "
+          >
             {SUBTITLE}
           </p>
-          <div className="flex flex-wrap justify-center gap-2 max-w-lg">
-            {SUGGESTIONS.map((s) => (
-              <SuggestionChip
-                key={s.label}
-                icon={s.icon}
-                label={s.label}
-                onClick={() => handleSend(s.prompt)}
-              />
-            ))}
-          </div>
+
+          <div className="w-full max-w-4xl mt-2">
+  <div className="mb-3 flex items-center justify-between px-1">
+    <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+      Quick actions
+    </div>
+
+    <div className="text-[11px] text-slate-400">
+      Select a topic to get started
+    </div>
+  </div>
+
+  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    {SUGGESTIONS.map((suggestion) => (
+      <SuggestionChip
+        key={suggestion.label}
+        icon={suggestion.icon}
+        label={suggestion.label}
+        description={suggestion.description}
+        category={suggestion.category}
+        onClick={() => handleSend(suggestion.prompt)}
+      />
+    ))}
+  </div>
+</div>
         </div>
       ) : (
-        <div ref={scrollRef} className="flex-1 overflow-y-auto relative z-10">
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto relative z-10"
+        >
           <div className="max-w-3xl mx-auto px-6 py-6 flex flex-col gap-4">
-            {messages.map((m, i) => (
-              <ChatMessage key={i} role={m.role} content={m.content} timestamp={m.timestamp} />
+            {messages.map((message, index) => (
+              <ChatMessage
+                key={index}
+                role={message.role}
+                content={message.content}
+                timestamp={message.timestamp}
+              />
             ))}
+
             {loading && <TypingIndicator />}
           </div>
         </div>
@@ -169,7 +290,7 @@ export default function UnifiedChatPage() {
           onValueChange={setInputValue}
           onClear={handleClear}
           hasMessages={hasMessages}
-                    inputPlaceholder={PLACEHOLDER}
+          inputPlaceholder={PLACEHOLDER}
         />
       </div>
     </div>
