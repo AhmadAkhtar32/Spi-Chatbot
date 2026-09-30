@@ -6,7 +6,8 @@ This is the shared engine behind Implementation Expert and Support Expert
 pipeline pointed at a different folder of documents.
 
 How it works, in order:
-  1. load_documents  — read every .txt file in a folder
+  1. load_documents  — read every .txt file in a folder, and tag each
+                        chunk with which module it belongs to
   2. chunk_text      — split each document into smaller overlapping pieces
   3. embed           — turn each chunk into a vector using a local
                         embedding model (fastembed / ONNX runtime) — no
@@ -19,22 +20,27 @@ How it works, in order:
   5. build_answer_prompt — hand only the relevant chunks to Groq, and ask
                         it to answer using just that material
 
-Each chunk is tagged with a "module" (financial / inventory / payroll /
-general) via infer_module() below — a filename-based placeholder used
-until a real documentation-defined module map replaces it. This lets
-app.py distinguish "you're not licensed for this module" from "you're
-licensed, but this isn't in our documents" instead of collapsing both
-into one not-authorized message.
+Module tagging (financial / inventory / payroll / general) is used by
+app.py's licensing check, so a question can be distinguished as either
+"not licensed for this module" or "licensed, but not covered." Most
+files are homogeneous enough that their filename alone tells you their
+module (see infer_module). Two files mix content from more than one
+module within a single file — for those, tagging happens per incident/
+section instead of per file, using that section's own "Category:" line
+or "INCIDENT TYPE:" heading (see MIXED_CONTENT_FILES / _module_for_block)
+rather than guessing.
 
 Embeddings are cached to disk (see _cache_path below), keyed by a hash
 of the folder's contents AND a schema version — so changing what a
-chunk stores (like adding "module") automatically invalidates old
-caches without needing to manually delete them.
+chunk stores (like adding "module", or changing how modules are tagged)
+automatically invalidates old caches without needing to manually delete
+them.
 """
 
 import hashlib
 import json
 import math
+import re
 from pathlib import Path
 
 _embedder = None
@@ -42,7 +48,18 @@ _embedder = None
 # Bump this whenever the shape of a cached chunk changes (new fields,
 # different module logic, etc.) so old caches auto-invalidate instead
 # of silently loading stale/incompatible data.
-SCHEMA_VERSION = "v2-module-tagged"
+SCHEMA_VERSION = "v3-per-block-module"
+
+# Files known to mix content from more than one module within a single
+# file — for these, module tagging happens per incident/section using
+# that section's own "Category:" line or "INCIDENT TYPE:" heading,
+# instead of one module tag for the whole file. Every other file's
+# content is homogeneous enough that filename-based tagging already
+# matches its content correctly.
+MIXED_CONTENT_FILES = {
+    "incident_log_examples.txt": "incident_number",
+    "payroll_and_access_incidents.txt": "incident_type",
+}
 
 
 def _get_embedder():
@@ -71,14 +88,9 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
 
 
 def infer_module(source: str) -> str:
-    """Best-effort module tag for a document, based on its filename.
-
-    PLACEHOLDER: this is a filename heuristic, not an authoritative
-    mapping. It exists so licensing can be checked at the module level
-    (e.g. 'financial' vs 'inventory' vs 'payroll') even though the
-    knowledge folders aren't physically split by module yet. Replace
-    this once a real documentation-defined module map is provided.
-    """
+    """Filename-based module tag for a whole file. Used for every file
+    except the ones in MIXED_CONTENT_FILES, whose content mixes modules
+    and is tagged per-section instead (see _module_for_block)."""
     name = source.lower()
     if name.startswith("gl_"):
         return "financial"
@@ -86,18 +98,50 @@ def infer_module(source: str) -> str:
         return "inventory"
     if "payroll" in name:
         return "payroll"
-    # Cross-cutting content (login issues, performance, general
-    # troubleshooting) doesn't belong to one module — always allowed.
+    return "general"
+
+
+def _blocks_for_mixed_file(filename: str, full_text: str) -> list[str]:
+    """Split a mixed-content file into its individual incidents/sections,
+    each of which gets tagged separately."""
+    split_kind = MIXED_CONTENT_FILES[filename]
+    if split_kind == "incident_number":
+        pattern = re.compile(r'(?=^Incident #\d+)', re.MULTILINE)
+    else:
+        pattern = re.compile(r'(?=^INCIDENT TYPE:)', re.MULTILINE)
+    return [b for b in pattern.split(full_text) if b.strip()]
+
+
+def _module_for_block(block: str) -> str:
+    """Module for one incident/section, read from the block's own
+    'Category:' line if present, else its own heading line — both are
+    text the document itself states, not an inference."""
+    lowered = block.lower()
+    category_match = re.search(r'category:\s*(.+)', lowered)
+    signal_text = category_match.group(1) if category_match else lowered.split('\n', 1)[0]
+    if "payroll" in signal_text:
+        return "payroll"
+    if "inventory" in signal_text:
+        return "inventory"
     return "general"
 
 
 def load_documents(folder: Path) -> list[dict]:
-    """Read every .txt file in a folder into {source, text} dicts."""
+    """Read every .txt file in a folder into {source, text, module}
+    dicts. See MIXED_CONTENT_FILES for the two files that get split at
+    incident/section boundaries and tagged individually rather than as
+    one file."""
     docs = []
     if not folder.exists():
         return docs
     for path in sorted(folder.glob("*.txt")):
-        docs.append({"source": path.name, "text": path.read_text(encoding="utf-8")})
+        full_text = path.read_text(encoding="utf-8")
+
+        if path.name in MIXED_CONTENT_FILES:
+            for block in _blocks_for_mixed_file(path.name, full_text):
+                docs.append({"source": path.name, "text": block, "module": _module_for_block(block)})
+        else:
+            docs.append({"source": path.name, "text": full_text, "module": infer_module(path.name)})
     return docs
 
 
@@ -177,9 +221,8 @@ class KnowledgeBase:
         docs = load_documents(folder)
         all_chunks = []
         for doc in docs:
-            module = infer_module(doc["source"])
             for chunk in chunk_text(doc["text"]):
-                all_chunks.append({"text": chunk, "source": doc["source"], "module": module})
+                all_chunks.append({"text": chunk, "source": doc["source"], "module": doc["module"]})
 
         if not all_chunks:
             self.chunks = []
