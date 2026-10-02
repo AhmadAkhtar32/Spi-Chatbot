@@ -145,3 +145,18 @@ filtration of data to make available listings such
 
 The above were examples. Now simply go the screen and start listings
 according to your requirements.
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: How do I filter and search GL transactions on screen?
+A: Go to Enquiries > Transactions, click Filter, and build a query using column names, criteria buttons (greater than, less than, equal to), and standard functions — e.g. 'Debit > 5625'.
+
+Q: How do I see a summary of transactions for one account?
+A: Go to Enquiries > Account Summary, choose the ledger account code, and specify whether to include posted, un-posted, or both types of transactions.
+
+Q: How do I see balances across all accounts at once?
+A: Go to Enquiries > Summary of balances — shows Account Code, Title, Debit, Credit, and Balance for the selected currency.
+
+Q: How can I track which user performed an action on a voucher?
+A: Use Enquiries > Activity Log — it can filter by user, activity type, date, specific voucher or voucher type, and login/logout times.

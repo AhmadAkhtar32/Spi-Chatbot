@@ -51,3 +51,15 @@ Resolution Steps:
    needs to be reprinted, this is not a data or software issue.
 Escalate to Engineering only if: the label format matches the
 configured Bin Location format exactly and the scan still fails.
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: Why does the same item show different stock on the Stock Status Report versus the Warehouse Transfer screen?
+A: Most commonly, an in-transit stock transfer was left in 'Pending Receipt' status and never confirmed at the destination warehouse — check Inventory > Transfers > Pending Receipts.
+
+Q: Stock is below the reorder point, but no suggested Purchase Order appears — why?
+A: The item's Replenishment Rule most likely has a blank Preferred Supplier — SPI won't auto-generate a suggested PO without one assigned.
+
+Q: A barcode scan during a stock count returns 'Item Not Found' even though the item exists — what's the likely cause?
+A: The physical label's barcode doesn't match the configured Bin Location format (AA-00-00) — often due to older labels printed before a warehouse reconfiguration.

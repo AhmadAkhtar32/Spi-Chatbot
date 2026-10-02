@@ -72,3 +72,27 @@ This section lists the fields and explains how they can be used.
 
 -   **Disable:** by clicking on this option restricted icons will be
     displayed
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: What is the default company code if none is specified during installation?
+A: 0001.
+
+Q: What does checking the 'Multi currency' box during installation do?
+A: It enables the system to handle multiple currencies; a base currency code must also be selected.
+
+Q: What does the 'Current site' field mean during installation?
+A: A code identifying the specific site where the software is being installed.
+
+Q: What does 'Number of users' control during installation?
+A: It limits how many user accounts can be created later during user setup.
+
+Q: What are the two Restricted Menu Options available?
+A: Hide (hides restricted icons) and Disable (restricted icons stay visible but are disabled).
+
+Q: What does the 'Data transfer' checkbox during installation control?
+A: Whether data generated on multiple sites can later be transferred between them.
+
+Q: What does 'No. Of decimals' define during installation?
+A: The number of decimal places used system-wide when dealing in Quantity, Product rate, and Foreign currency rate.

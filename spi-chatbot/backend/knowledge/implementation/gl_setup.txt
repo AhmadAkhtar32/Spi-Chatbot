@@ -680,3 +680,39 @@ etc.
 On the main menu screen go to the setup menu and then select Preferences
 Setup which will show various values which may be set according to
 preference.
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: How do I create a new GL account code?
+A: Go to Setup > Chart of Accounts > Maintain, enter the account code (following the structure defined at installation), the title, and whether it's a Group or Detail type account.
+
+Q: What's the difference between a Group and a Detail account type?
+A: A Group account can contain several detail accounts within it; a Detail account is the lowest level in the hierarchy, where actual transactions are recorded.
+
+Q: How do I copy a series of sub-accounts to another group account?
+A: Use Chart of Accounts > Copy, specifying the Source account and Target account — they must be similar in type and structure.
+
+Q: When is Cost Centre setup available?
+A: Only if General Ledger has been purchased and is integrated with the system; the cost centre can be defined in Group or Detail category.
+
+Q: What information is entered in Companies setup?
+A: Company name, code, address, contact details, ISO, national tax number, FC gain/loss account, delivery locations, and website/email under the 'Others' option.
+
+Q: How many foreign currencies can be entered in Foreign Currency Rates setup?
+A: Up to five currencies, with exchange rates comparable against each other and against the reporting currency.
+
+Q: What does Voucher Format Setup let me customize?
+A: Fonts, sizes, and exact print positions (via X/Y coordinates or drag-and-drop) for printing vouchers on pre-printed stationery.
+
+Q: What's required before Sites Setup is available?
+A: The data transfer module must be purchased and installed, and the number of sites specified at installation.
+
+Q: What is the purpose of User Group setup?
+A: To define security levels (menu to button level) once per group, so individual users can simply be assigned to a group instead of configuring security per person.
+
+Q: How do I create a new user?
+A: Go to Setup > User, enter the required information, select the already-created user group from the pick list, then save.
+
+Q: What can be adjusted in Preferences setup?
+A: Display options such as whether system date/time shows on reports, or sorting behavior on account code in the Chart of Accounts pick-list.

@@ -820,3 +820,24 @@ be printed using various available options. These reports are:
 -   **List of unused vouchers**
 
 -   **List of cheques** • **Cash flow statement**
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: How do I print the full Chart of Accounts?
+A: Go to Reports > Chart of Accounts, then apply filters and sort by account code, title, or creation date as needed.
+
+Q: How do I generate a list of transactions for a specific voucher type?
+A: Go to Reports > Transaction Listing — can be filtered by voucher type, period or date range, and printed in any reporting currency if multi-currency is enabled.
+
+Q: What does the Trial Balance report offer?
+A: One of the most useful reporting features in GL — besides multiple filter criteria, it has a drill-down feature allowing you to trace transactions right down to the individual voucher entry.
+
+Q: How do I drill down from a Trial Balance to the actual voucher?
+A: Double-click any account code on the report to view its Ledger, then click again to reach the voucher level.
+
+Q: What does the Age Analysis report show?
+A: A summary or detailed breakdown of Receivables, Payables, or all Open Items, broken into up to five custom periods, with optional minimum/maximum amount filters.
+
+Q: What does the Budget Report show?
+A: A budget variance report — variance is calculated only between the last two selected columns in the 'Select Report' group, for a chosen account range, cost centre, or period range.

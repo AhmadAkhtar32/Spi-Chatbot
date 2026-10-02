@@ -148,3 +148,21 @@ account, secondary chart of account or range of accounts.
 >  For the purpose of discrete account
 > information, click on " discrete a/c" and the information will be
 > displayed along with the code and title of the account.
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: What does the Trial Balance report offer?
+A: One of the most useful reporting features in the GL system — besides various filter criteria, it has a drill-down feature allowing you to trace transactions right down to the individual voucher entry.
+
+Q: Can I restrict the Trial Balance to a specific Chart of Accounts level?
+A: Yes — you can print for level 1, level 2, or level 3 as defined for your Chart of Accounts structure; upper levels automatically reflect lower-level transactions in group totals.
+
+Q: How do I drill down from a Trial Balance report to the actual voucher?
+A: Double-click any account code on the displayed report to view its Ledger, then click again within the Ledger to reach the voucher level.
+
+Q: What does the Ledger report show?
+A: The ledger for the Chart of Accounts, any secondary Chart of Accounts, or a range of accounts, with the same drill-down feature down to the original voucher.
+
+Q: Can the Trial Balance or Ledger report be printed in a different currency than it was entered in?
+A: Yes, if the multi-currency option is installed — reports can be printed in any desired reporting currency.

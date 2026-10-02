@@ -81,3 +81,18 @@ click on the "Financial report" for the final printing of the report. If
 you wish to print notes, click on the "**notes**" and enter the various
 other options like transactions, date entered, code, description, if
 required.
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: How do I create a custom report like an income statement?
+A: Go to Report Writer, click New, and specify the number of rows and columns — this can be resized or copied later from an existing report.
+
+Q: What does the Report Format section of the report writer control?
+A: The code, name, and titles of the report, with macros available via right-click on the title bar for additional formatting.
+
+Q: What are the components of Financial Statements in the report writer?
+A: Notes setup, Total setup, Report setup, and Financial report.
+
+Q: Where do I go to print the final financial report?
+A: Report Writer > Financial statements > Financial Report.

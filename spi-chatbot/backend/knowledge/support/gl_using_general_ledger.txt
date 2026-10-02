@@ -155,3 +155,27 @@ only setups relevant to GL will be displayed.
 
 The following section will guide you through the different **select**
 screens for which information needs to be keyed in for future reference:
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: What is the maximum number of characters allowed for an account code in the Chart of Accounts?
+A: A maximum of 20 characters.
+
+Q: What is the maximum number of levels allowed in the Cost Centre Format?
+A: A maximum of ten levels.
+
+Q: What are the three Level Separator options for Cost Centre codes?
+A: Dash, comma, and full stop.
+
+Q: What is the maximum number of digits for Analysis setup?
+A: Ten digits.
+
+Q: How do I change my SPI password?
+A: Go to the File menu, select Change Password, then enter your old password followed by the new password twice.
+
+Q: What case must a user ID be entered in when logging in?
+A: Upper case.
+
+Q: What happens when I select General Ledger from the Select menu?
+A: The menus adjust so that only setups relevant to GL are displayed.

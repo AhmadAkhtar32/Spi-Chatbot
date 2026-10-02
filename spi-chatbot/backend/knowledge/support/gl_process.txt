@@ -245,3 +245,21 @@ form of a *yes* click) the standard file dialogue box appears showing
 the file containing the data that needs to be exported. Selecting the
 required file and choosing to proceed starts the process and prompts the
 user on successful completion.
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: What's the difference between a verified voucher and a posted voucher?
+A: A verified voucher is functionally the same as a posted one, except it can still be unlocked/unverified — a posted voucher cannot be un-posted once the process has been applied.
+
+Q: What happens when a period is closed?
+A: No vouchers entered during that period may be modified, deleted, or added, though reports can still be viewed — all vouchers should be posted before closing the period.
+
+Q: What's the difference between permanent and temporary Year End?
+A: Permanent Year End can be run only once to finally close the fiscal year, after which data for that year can't be modified. Temporary Year End can be run multiple times to build fresh balances before the permanent close.
+
+Q: How is Foreign Currency Gain/Loss calculated?
+A: Based on the exchange rate of the transaction date entered by the user, but only for accounts defined as Asset or Liability type with F.C. Translation checked in the Chart of Accounts setup.
+
+Q: Can an import of vouchers from another application be done directly?
+A: Yes, via Process > Import Voucher, but the data must be formatted for SPI's specific temporary import tables — technical staff assistance is recommended.

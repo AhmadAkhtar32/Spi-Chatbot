@@ -55,3 +55,21 @@ Insert the CD named Sidat Hyder Financials General Ledger Module into
 the CD drive. Double click on the setup icon, the system will ask you
 for the destination drive on which you would like save the program --
 select as desired.
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: What is Sidat Hyder Financials?
+A: An accounting system that fully integrates Sales, Purchase, Inventory, Fixed Assets and General Ledger.
+
+Q: What architecture is Sidat Hyder Financials built on?
+A: Client Server Technology, with an easy-to-use, intuitive Windows-based interface.
+
+Q: Do I need to be present during installation?
+A: Yes — installation is carried out by Sidat Hyder's implementation staff, but client involvement is recommended since much of the information that needs to be keyed in comes from the client.
+
+Q: How do I start installing Sidat Hyder Financials?
+A: Insert the Sidat Hyder Financials General Ledger Module CD, double-click the setup icon, and select the destination drive.
+
+Q: What are some capabilities Sidat Hyder Financials provides?
+A: User-defined system configuration and setup, state-of-the-art reporting, budgeting and cost controls, multi-currency, payments and withholding tax, and flexible data entry.

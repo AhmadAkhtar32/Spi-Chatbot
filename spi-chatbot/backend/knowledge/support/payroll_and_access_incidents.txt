@@ -66,3 +66,18 @@ Resolution Steps:
    one-off bug, and is tracked for a future indexing improvement.
 Escalate to Engineering only if: the report times out even for a date
 range under 1 month.
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: An employee's payslip shows a tax deduction that doesn't match their jurisdiction — what should I check?
+A: Check whether their Tax Jurisdiction Code was changed mid-cycle after the current payroll run was already in Draft status — edits to jurisdiction don't retroactively apply to an already-drafted run.
+
+Q: HR gets a validation error when trying to add a new employee to Payroll — why?
+A: No default Salary Structure has been marked in Payroll > Configuration > Salary Structures — at least one must be marked default before any employee can be saved.
+
+Q: A user resets their password but still gets 'Invalid Credentials' on the next login attempt — why?
+A: SPI's session cache on the client's local PowerBuilder installation doesn't always refresh immediately after a server-side reset — ask the user to fully close and reopen the application, or restart their machine.
+
+Q: A report for a date range longer than about 6 months hangs or times out — why?
+A: Reports pulling more than roughly 6 months of transactional data run without an indexed date-filter fast path — recommend breaking the report into smaller ranges (e.g. quarterly) as a workaround.

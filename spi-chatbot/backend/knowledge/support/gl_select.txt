@@ -33,3 +33,15 @@ are:
 If you want to switch over to another application, just click on one of
 the applications mentioned above and the application will change in a
 few seconds.
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: How do I switch the current working site?
+A: Use the Select menu's Site option — the current site can generate new entries while the working site can only be used for modifications.
+
+Q: How do I change the current accounting year or period?
+A: Use the Select menu's Year or Period options to switch to a new year or period.
+
+Q: What are the five applications available in Sidat Hyder Financials?
+A: General Ledger, Fixed Assets, Purchase, Sales, and Inventory.

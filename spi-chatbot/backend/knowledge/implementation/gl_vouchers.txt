@@ -218,3 +218,21 @@ fields that are discussed below:
 -   Verified
 
 -   Auto generate
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: Can I create my own sales or purchase voucher type?
+A: No — the system does not allow creating system-generated voucher types (sales voucher, purchase voucher, cheque payment voucher) that are defined at installation.
+
+Q: What does the Balance voucher button do?
+A: Automatically balances the voucher by adjusting the debit or credit amount on the currently selected transaction — it only works for the current screen, not other reporting-currency tabs.
+
+Q: How do I save a voucher as a default voucher for repeated entries?
+A: Click 'Save as default' on the voucher entry screen — you can choose to save exact Dr/Cr amounts or a percentage distribution (the two must total 1.00).
+
+Q: Can a voucher be copied from one company to another?
+A: Yes, using Copy Voucher — the source and target can differ by company, voucher type, period, and posted/un-posted status.
+
+Q: What is the Auto reverse option on a voucher?
+A: Checking it creates a reversal voucher automatically in the next period on period end.

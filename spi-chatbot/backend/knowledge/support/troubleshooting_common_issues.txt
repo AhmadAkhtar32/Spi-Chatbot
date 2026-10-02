@@ -51,3 +51,24 @@ If none of the above apply, or the issue involves potential data loss,
 escalate to Tier 2 immediately rather than continuing first-line
 troubleshooting — do not attempt manual database edits without Tier 2
 sign-off, even if the fix seems obvious.
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: Why would a user's session expire within minutes of logging in?
+A: SPI's session timeout is tied to clock sync between the terminal and the application server — if the terminal clock has drifted more than 5 minutes, sessions expire early.
+
+Q: A report returns a blank result even though data clearly exists — what are the common causes?
+A: Either the report's date filter doesn't match the client's regional date format (DD/MM/YYYY vs MM/DD/YYYY) and silently returns zero rows, or the linked-server connection between Oracle and SQL Server is down.
+
+Q: Why does SPI slow down specifically during month-end close?
+A: Month-end batch jobs (depreciation runs, payroll posting) compete for the same database resources as live user queries — check whether batch jobs are scheduled during business hours instead of overnight.
+
+Q: Inventory shows different stock numbers than a Sales order confirmation — why?
+A: A pending stock adjustment or transfer likely hasn't been 'posted' yet — SPI treats unposted transactions as provisional and excludes them from real-time stock counts.
+
+Q: Barcode labels print with garbled characters — what's the likely cause?
+A: A printer driver mismatch — SPI's barcode module requires the printer set to the exact DPI specified in the label template; a generic driver will misrender the barcode font.
+
+Q: When should an issue be escalated to Tier 2 immediately?
+A: If none of the documented common causes apply, or if the issue involves potential data loss — do not attempt manual database edits without Tier 2 sign-off.

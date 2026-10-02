@@ -1192,3 +1192,36 @@ Transfer which will display the option which is discussed below.
 > setup options (for example what is to be transferred in and what is to
 > be transferred out and which records are to be both transferred in and
 > out etc.) and is also used to determine the data transfer mode.
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: How do I create a new GL account code?
+A: Go to Setup > Chart of Accounts > Maintain, enter the account code following the structure defined at installation, the title, and whether it's a Group or Detail type account.
+
+Q: What's the difference between a Group and a Detail account type?
+A: A Group account can contain several detail accounts; a Detail account is the lowest level in the hierarchy, where actual transactions are recorded.
+
+Q: What is a Secondary Chart of Accounts used for?
+A: Mapping a group of unique ledger account heads to a group within the main Chart of Accounts — e.g. consolidating regional office sales into a head-office account.
+
+Q: How are opening balances for bills and cheques from before GL's start year entered?
+A: Via Setup > Opening Balances — 'Bills' for pre-GL bills (shown in aging reports, available for knocking off) and 'Cheques' for un-reconciled bank transactions from before the starting year.
+
+Q: How do I set up a budget for an account code?
+A: Via Setup > Budget Setup — Original allows entering the current year's budget per account code and cost centre; Revised allows entering revised figures against the original budget.
+
+Q: How do I add a new city for business addresses?
+A: Go to Setup > Cities and enter the city name so it can be selected from a pick list instead of re-typed each time.
+
+Q: When do I need Bank Accounts setup?
+A: When a vendor or buyer will transact via cheques or drafts, so the relevant bank account information is available in the system.
+
+Q: What information is captured in Suppliers setup?
+A: A code and name for each supplier, plus address, phone, fax, and contact information.
+
+Q: What does Data Transfer Setup define?
+A: Standards for transferring data between sites — including which record types (Posted, Unposted, Verified, Unverified, Transferred, Not Transferred, or All) are included. Only accessible if the data transfer module is installed.
+
+Q: What's required before Sites Setup is available?
+A: The data transfer module must be purchased and installed, with the number of sites specified at installation.

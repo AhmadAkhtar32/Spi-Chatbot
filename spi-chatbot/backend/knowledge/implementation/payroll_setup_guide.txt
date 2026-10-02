@@ -40,3 +40,30 @@ client should be aware of before go-live, not after.
 - Employee master fully imported with valid tax jurisdiction codes
 - At least one full parallel payroll run completed and reconciled
   against the client's previous system before cutover
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: Can Payroll be configured before Finance is set up?
+A: No. Payroll cannot be configured standalone — Finance chart-of-accounts mapping must be complete first, since every payroll run posts journal entries back to Finance.
+
+Q: What must an employee record have before a salary structure can be assigned?
+A: A valid tax jurisdiction code.
+
+Q: What must exist before any employee can be onboarded into Payroll?
+A: At least one salary structure marked as default.
+
+Q: How does Payroll integrate with an existing biometric attendance system?
+A: Via the Attendance Import utility under Payroll > Configuration > Attendance Source.
+
+Q: What happens if the client has no existing attendance system?
+A: Attendance must be entered manually each cycle — this should be flagged as an operational cost before go-live.
+
+Q: Is multi-currency payroll supported out of the box?
+A: No — it requires a custom disbursement module and should be treated as a change request.
+
+Q: Does Payroll include tax filing or compliance reporting by default?
+A: No — this is jurisdiction-specific and must be scoped separately per client location.
+
+Q: What should be completed before Payroll cutover?
+A: A full parallel payroll run, reconciled against the client's previous system.

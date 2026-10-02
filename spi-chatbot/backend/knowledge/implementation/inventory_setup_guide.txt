@@ -41,3 +41,24 @@ one full quarter of real data is available, then revisit.
 - Warehouse hierarchy matches client's physical site layout
 - Reorder rules configured for at least top 20% of SKUs by usage volume
 - At least one full cycle count completed in the test environment
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: What must be finalized before Inventory module configuration can begin?
+A: The client's chart of accounts and warehouse hierarchy (Site > Warehouse > Bin Location), plus a finalized item master list in the standard import template.
+
+Q: What format must Bin Location codes follow?
+A: The format AA-00-00 (Aisle-Rack-Shelf), to remain compatible with the barcode scanning module.
+
+Q: What default safety stock should be applied if there's no historical consumption data?
+A: 15% above average monthly usage, until at least one full quarter of real data is available.
+
+Q: Why might automatic reorder-to-PO generation not work even with Inventory configured correctly?
+A: It requires the Purchase module to also be licensed and configured — this dependency should be flagged early.
+
+Q: Is multi-currency stock valuation supported out of the box?
+A: No — it requires a custom valuation script and should be treated as a scoped change request, not standard configuration.
+
+Q: What should be checked on the Inventory go-live checklist?
+A: Item master imported and spot-checked (10% of SKUs), warehouse hierarchy matching the physical site layout, reorder rules configured for the top 20% of SKUs by usage, and at least one full cycle count completed in test.

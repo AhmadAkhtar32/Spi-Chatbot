@@ -503,3 +503,30 @@ you wish to reverse the knock off effect.
 > the action cannot be reversed and thus the deletion process
 > permanently marks the selected entries as deleted and which cannot be
 > restored.
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: Can I create my own sales or purchase voucher type?
+A: No — the system does not allow creating system-generated voucher types (sales voucher, purchase voucher, cheque payment voucher) that are defined at installation.
+
+Q: What does the Balance voucher button do?
+A: Automatically balances the voucher by adjusting the debit or credit amount on the currently selected transaction — it only works for the current screen, not other reporting-currency tabs.
+
+Q: How do I save a voucher as a default voucher for repeated entries?
+A: Click 'Save as default' — you can save exact Dr/Cr amounts or a percentage distribution (the two figures must total 1.00).
+
+Q: What is the Auto reverse option on a voucher?
+A: Checking it creates a reversal voucher automatically in the next period on period end.
+
+Q: How do I issue a cheque payment against a supplier's bills?
+A: Use Vouchers > Cheque Payment-Others, select the bank account, cheque number, and knock off the outstanding bills being paid — withholding tax is deducted automatically where applicable.
+
+Q: How do I reconcile bank statements against the ledger?
+A: Use Vouchers > Bank Reconciliation — select the bank account, filter by year/currency, then tick each transaction that matches the bank statement as reconciled.
+
+Q: What does the Knock Off facility do?
+A: Lets you match (knock off) debit and credit transactions for account codes marked as 'Open Item' during ledger account creation.
+
+Q: Can a knock-off be reversed?
+A: Yes, using the Reverse/Knock off reverse button — but only for entries knocked off during the current session.

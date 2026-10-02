@@ -43,3 +43,18 @@ Resolution: Corrected NTP configuration on the client's terminal server;
 recommended periodic clock-sync checks as part of that client's IT
 maintenance routine.
 Category: Session Management / Infrastructure
+
+
+### Frequently Asked Questions (Additional Test Coverage)
+
+Q: A client imported a bulk stock adjustment and now sees negative stock — what caused it?
+A: The import file used a different unit of measure (UOM) than what was configured for those items in the Item Master, so quantities were misread by a conversion factor (Incident #1042).
+
+Q: Why were payroll postings to Finance duplicated for one pay cycle?
+A: The payroll batch job was manually re-run after a timeout, without checking whether the first run had already partially posted to Finance before failing (Incident #1057).
+
+Q: A custom report combining Sales and Purchase data sometimes shows incomplete results — why?
+A: It relies on a scheduled overnight sync between Oracle (Sales) and SQL Server (Purchase); on nights the sync fails silently, the report runs against stale data with no error shown (Incident #1063).
+
+Q: Why are multiple users getting logged out randomly throughout the day?
+A: The client's terminal server clocks had drifted out of sync with the SPI application server due to a misconfigured NTP setting (Incident #1071).
