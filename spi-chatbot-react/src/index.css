@@ -2,6 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Color tokens as RGB triplets (not hex) — this is what lets Tailwind's
+   opacity modifiers (bg-primary/8, text-ink-secondary/70, etc.) keep
+   working once colors come from CSS variables instead of fixed hex.
+   :root holds the light palette; html.dark overrides it for dark mode.
+   Toggling the 'dark' class on <html> (see TopBar.jsx) is the only
+   thing that switches themes — every component using these Tailwind
+   color names updates automatically, no per-component changes needed. */
+:root {
+  --color-bg: 248 250 252;
+  --color-surface: 255 255 255;
+  --color-border: 226 232 240;
+  --color-primary: 37 99 235;
+  --color-primary-dark: 29 78 216;
+  --color-secondary: 59 130 246;
+  --color-accent: 96 165 250;
+  --color-ink: 15 23 42;
+  --color-ink-secondary: 100 116 139;
+  --color-success: 34 197 94;
+  --color-warning: 245 158 11;
+  --color-danger: 239 68 68;
+  --color-muted: 241 245 249;
+  --color-hover: 248 250 252;
+}
+
+html.dark {
+  --color-bg: 11 18 32;
+  --color-surface: 17 24 39;
+  --color-border: 31 41 55;
+  --color-primary: 59 130 246;
+  --color-primary-dark: 37 99 235;
+  --color-secondary: 96 165 250;
+  --color-accent: 147 197 253;
+  --color-ink: 241 245 249;
+  --color-ink-secondary: 148 163 184;
+  --color-success: 74 222 128;
+  --color-warning: 251 191 36;
+  --color-danger: 248 113 113;
+  --color-muted: 30 41 59;
+  --color-hover: 30 41 59;
+}
+
 @layer components {
   /* Standard card: soft blue-tinted glow at rest, deepening on hover —
      used by module cards, metric cards, chat bubbles, and every panel
@@ -15,35 +56,22 @@
   }
 }
 
-@layer utilities {
-  /* Full viewport height that respects mobile browser toolbars.
-     Falls back to 100vh where dvh isn't supported. */
-  .h-screen-dvh {
-    height: 100vh;
-    height: 100dvh;
-  }
-}
-
 html, body, #root {
   height: 100%;
 }
 
-html {
-  -webkit-text-size-adjust: 100%;
-}
-
 body {
-  @apply bg-bg text-ink antialiased;
+  @apply bg-bg text-ink antialiased transition-colors duration-150;
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  overscroll-behavior: none;
 }
 
-/* Thin, understated scrollbar — no theme switcher, just a quiet default */
+/* Thin, understated scrollbar — follows the current theme instead of a
+   fixed light-mode gray */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
+  background: rgb(var(--color-border));
   border-radius: 4px;
 }
 ::-webkit-scrollbar-track {
@@ -54,9 +82,7 @@ body {
 .assistant-markdown {
   font-size: 14px;
   line-height: 1.7;
-  color: #0F172A;
-  overflow-wrap: anywhere; /* long IDs / URLs never push the bubble wider than the screen */
-  min-width: 0;
+  color: rgb(var(--color-ink));
 }
 .assistant-markdown p {
   margin: 0 0 8px 0;
@@ -75,20 +101,22 @@ body {
   font-weight: 600;
 }
 .assistant-markdown code {
-  background: #F1F5F9;
-  border: 1px solid #E5E7EB;
+  background: rgb(var(--color-border) / 0.5);
+  border: 1px solid rgb(var(--color-border));
   border-radius: 3px;
   padding: 1px 5px;
   font-size: 13px;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  color: rgb(var(--color-ink));
 }
 .assistant-markdown pre {
-  background: #0F172A;
+  /* Deliberately fixed near-black in both themes — a code block that's
+     the same color as the surrounding page loses its visual distinction */
+  background: #0B1220;
   border-radius: 6px;
   padding: 12px 14px;
   margin: 8px 0;
   overflow-x: auto;
-  max-width: 100%;
 }
 .assistant-markdown pre code {
   background: transparent;
@@ -97,33 +125,20 @@ body {
   color: #E2E8F0;
   font-size: 12.5px;
   line-height: 1.6;
-  overflow-wrap: normal;
 }
-/* Tables scroll sideways inside the bubble instead of stretching the page */
 .assistant-markdown table {
-  display: block;
-  overflow-x: auto;
-  max-width: 100%;
   border-collapse: collapse;
-  width: max-content;
-  min-width: 100%;
+  width: 100%;
   margin: 8px 0;
   font-size: 13.5px;
 }
 .assistant-markdown th, .assistant-markdown td {
-  border: 1px solid #E5E7EB;
+  border: 1px solid rgb(var(--color-border));
   padding: 6px 10px;
   text-align: left;
-  overflow-wrap: normal;
 }
 .assistant-markdown th {
-  background: #F8FAFC;
+  background: rgb(var(--color-muted));
   font-weight: 600;
-  color: #374151;
-}
-
-@media (max-width: 639px) {
-  .assistant-markdown {
-    font-size: 14.5px;
-  }
+  color: rgb(var(--color-ink-secondary));
 }

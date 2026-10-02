@@ -4,18 +4,23 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: '#F8FAFC',
-        surface: '#FFFFFF',
-        border: '#E2E8F0',
-        primary: '#2563EB',
-        'primary-dark': '#1D4ED8',
-        secondary: '#3B82F6',
-        accent: '#60A5FA',
-        ink: '#0F172A',
-        'ink-secondary': '#64748B',
-        success: '#22C55E',
-        warning: '#F59E0B',
-        danger: '#EF4444',
+        bg: 'rgb(var(--color-bg) / <alpha-value>)',
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
+        border: 'rgb(var(--color-border) / <alpha-value>)',
+        primary: 'rgb(var(--color-primary) / <alpha-value>)',
+        'primary-dark': 'rgb(var(--color-primary-dark) / <alpha-value>)',
+        secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
+        accent: 'rgb(var(--color-accent) / <alpha-value>)',
+        ink: 'rgb(var(--color-ink) / <alpha-value>)',
+        'ink-secondary': 'rgb(var(--color-ink-secondary) / <alpha-value>)',
+        success: 'rgb(var(--color-success) / <alpha-value>)',
+        warning: 'rgb(var(--color-warning) / <alpha-value>)',
+        danger: 'rgb(var(--color-danger) / <alpha-value>)',
+        // Two extra tokens that replace hardcoded Tailwind grays
+        // (bg-slate-50 / bg-slate-100) used for hover washes and
+        // static muted panels — those didn't adapt to dark mode.
+        muted: 'rgb(var(--color-muted) / <alpha-value>)',
+        hover: 'rgb(var(--color-hover) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
