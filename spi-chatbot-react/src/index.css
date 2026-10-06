@@ -4,7 +4,7 @@
 
 /* =========================================================
    SPI ENTERPRISE AI ASSISTANT
-   BLUE + WHITE LIGHT THEME
+   LIGHT + DARK THEME
    ========================================================= */
 
 /*
@@ -23,7 +23,13 @@
  rgb(37, 99, 235)
 */
 
+/* =========================================================
+   LIGHT THEME
+   ========================================================= */
+
 :root {
+  color-scheme: light;
+
   /* Main application background */
   --color-bg: 247 249 253;
 
@@ -64,13 +70,78 @@
 }
 
 /* =========================================================
+   DARK THEME
+   ========================================================= */
+
+/*
+  TopBar.jsx adds/removes the "dark" class on <html>.
+
+  Every component using:
+    bg-bg
+    bg-surface
+    text-ink
+    text-ink-secondary
+    border-border
+    bg-muted
+    bg-hover
+    bg-primary
+
+  automatically switches theme through these variables.
+*/
+
+html.dark {
+  color-scheme: dark;
+
+  /* Main application background */
+  --color-bg: 8 15 29;
+
+  /* Navbar, sidebar, cards, panels */
+  --color-surface: 12 21 38;
+
+  /* Borders */
+  --color-border: 38 52 73;
+
+  /* Main SPI blue */
+  --color-primary: 59 130 246;
+
+  /* Hover / pressed blue */
+  --color-primary-dark: 37 99 235;
+
+  /* Secondary blue */
+  --color-secondary: 96 165 250;
+
+  /* Accent */
+  --color-accent: 147 197 253;
+
+  /* Main text */
+  --color-ink: 241 245 249;
+
+  /* Secondary text */
+  --color-ink-secondary: 148 163 184;
+
+  /* Status colors */
+  --color-success: 74 222 128;
+  --color-warning: 251 191 36;
+  --color-danger: 248 113 113;
+
+  /* Muted panels */
+  --color-muted: 20 31 50;
+
+  /* Hover wash */
+  --color-hover: 23 36 57;
+}
+
+/* =========================================================
    COMPONENTS
    ========================================================= */
 
 @layer components {
   /*
-    Standard white card with subtle blue shadow.
-    Used throughout the application.
+    Standard application card.
+
+    The same component automatically changes between
+    light and dark because bg-surface / border-border
+    use the variables above.
   */
   .card {
     @apply bg-surface
@@ -112,6 +183,7 @@ body,
 
 html {
   -webkit-text-size-adjust: 100%;
+  background: rgb(var(--color-bg));
 }
 
 body {
@@ -129,6 +201,15 @@ body {
     sans-serif;
 
   overscroll-behavior: none;
+
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+#root {
+  background: rgb(var(--color-bg));
+  color: rgb(var(--color-ink));
 }
 
 /* =========================================================
@@ -142,6 +223,12 @@ select {
   font: inherit;
 }
 
+input,
+textarea,
+select {
+  color: rgb(var(--color-ink));
+}
+
 /*
   Keep focus treatment blue instead of browser black.
 */
@@ -149,6 +236,21 @@ input:focus,
 textarea:focus,
 select:focus {
   outline: none;
+}
+
+/*
+  Correct browser autofill colors in dark mode.
+*/
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:focus,
+html.dark textarea:-webkit-autofill,
+html.dark select:-webkit-autofill {
+  -webkit-text-fill-color: rgb(var(--color-ink));
+  box-shadow:
+    0 0 0 1000px rgb(var(--color-surface)) inset;
+  transition:
+    background-color 9999s ease-in-out 0s;
 }
 
 /* =========================================================
@@ -160,6 +262,7 @@ select:focus {
   height: 8px;
 }
 
+/* Light scrollbar */
 ::-webkit-scrollbar-thumb {
   background: rgb(203 213 225);
   border-radius: 999px;
@@ -173,13 +276,46 @@ select:focus {
   background: transparent;
 }
 
+/* Dark scrollbar */
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgb(51 65 85);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgb(71 85 105);
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Firefox */
+html {
+  scrollbar-color:
+    rgb(203 213 225)
+    transparent;
+}
+
+html.dark {
+  scrollbar-color:
+    rgb(51 65 85)
+    transparent;
+}
+
 /* =========================================================
    TEXT SELECTION
    ========================================================= */
 
+/* Original light selection */
 ::selection {
   background: rgb(37 99 235 / 0.16);
   color: rgb(15 23 42);
+}
+
+/* Dark selection */
+html.dark ::selection {
+  background: rgb(59 130 246 / 0.32);
+  color: rgb(241 245 249);
 }
 
 /* =========================================================
@@ -225,8 +361,13 @@ select:focus {
   text-underline-offset: 2px;
 }
 
-/* Inline code */
+/* =========================================================
+   INLINE CODE
+   ========================================================= */
 
+/*
+  Preserve your original light appearance exactly.
+*/
 .assistant-markdown code {
   padding: 1px 5px;
 
@@ -234,6 +375,8 @@ select:focus {
 
   border: 1px solid rgb(226 232 240);
   border-radius: 4px;
+
+  color: rgb(15 23 42);
 
   font-family:
     'IBM Plex Mono',
@@ -245,7 +388,18 @@ select:focus {
   font-size: 13px;
 }
 
-/* Code block */
+/* Dark inline code */
+html.dark .assistant-markdown code {
+  background: rgb(20 31 50);
+
+  border-color: rgb(51 65 85);
+
+  color: rgb(226 232 240);
+}
+
+/* =========================================================
+   CODE BLOCK
+   ========================================================= */
 
 .assistant-markdown pre {
   max-width: 100%;
@@ -255,6 +409,7 @@ select:focus {
 
   background: rgb(15 23 42);
 
+  border: 1px solid transparent;
   border-radius: 7px;
 
   overflow-x: auto;
@@ -272,6 +427,19 @@ select:focus {
   line-height: 1.6;
 
   overflow-wrap: normal;
+}
+
+/* Dark code block */
+html.dark .assistant-markdown pre {
+  background: rgb(2 6 23);
+
+  border-color: rgb(30 41 59);
+}
+
+html.dark .assistant-markdown pre code {
+  background: transparent;
+  border: none;
+  color: rgb(226 232 240);
 }
 
 /* =========================================================
@@ -305,12 +473,80 @@ select:focus {
   overflow-wrap: normal;
 }
 
+/*
+  Preserve original light table header.
+*/
 .assistant-markdown th {
   background: rgb(248 250 252);
 
   color: rgb(55 65 81);
 
   font-weight: 600;
+}
+
+/* Dark tables */
+html.dark .assistant-markdown th,
+html.dark .assistant-markdown td {
+  border-color: rgb(51 65 85);
+}
+
+html.dark .assistant-markdown th {
+  background: rgb(20 31 50);
+
+  color: rgb(226 232 240);
+}
+
+html.dark .assistant-markdown td {
+  background: transparent;
+
+  color: rgb(203 213 225);
+}
+
+/* =========================================================
+   PLACEHOLDERS
+   ========================================================= */
+
+::placeholder {
+  color: rgb(var(--color-ink-secondary) / 0.7);
+}
+
+html.dark ::placeholder {
+  color: rgb(var(--color-ink-secondary) / 0.65);
+}
+
+/* =========================================================
+   DISABLED ELEMENTS
+   ========================================================= */
+
+button:disabled,
+input:disabled,
+textarea:disabled,
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* =========================================================
+   THEME TRANSITIONS
+   ========================================================= */
+
+/*
+  Only transition the main application elements.
+  Do NOT globally transition every div because that can
+  cause visual lag and strange rendering.
+*/
+
+header,
+aside,
+main,
+.card,
+input,
+textarea,
+select {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
 }
 
 /* =========================================================
