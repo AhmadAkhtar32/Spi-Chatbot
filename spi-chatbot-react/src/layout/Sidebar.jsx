@@ -1,106 +1,291 @@
-import { useNavigate, NavLink } from 'react-router-dom'
-import { Plus, MessageSquareText, Settings, HelpCircle, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { NavLink, useLocation } from 'react-router-dom'
+import {
+  Plus,
+  MessageSquareText,
+  Settings,
+  HelpCircle,
+  ChevronsLeft,
+  ChevronsRight,
+} from 'lucide-react'
 
 const FOOTER_ITEMS = [
-  { to: '/settings', label: 'Settings', icon: Settings },
-  { to: '/help', label: 'Help', icon: HelpCircle },
+  {
+    to: '/settings',
+    label: 'Settings',
+    icon: Settings,
+  },
+  {
+    to: '/help',
+    label: 'Help',
+    icon: HelpCircle,
+  },
 ]
 
-export default function Sidebar({ collapsed, onToggle, conversations, activeId, onNewChat, onSelectChat }) {
-  const navigate = useNavigate()
+export default function Sidebar({
+  collapsed,
+  onToggle,
+  mobileOpen,
+  onMobileClose,
+  conversations,
+  activeId,
+  onNewChat,
+  onSelectChat,
+}) {
+  const location = useLocation()
 
-  // Selecting a chat (or starting a new one) only used to update which
-  // conversation is "active" in state — it never changed the route. So
-  // clicking a chat while on e.g. /settings left you stuck on Settings
-  // with no visible change. Navigating back to "/" here is what actually
-  // brings the chat view back on screen.
-  function handleNewChat() {
-    onNewChat()
-    navigate('/')
-  }
-
-  function handleSelectChat(id) {
-    onSelectChat(id)
-    navigate('/')
-  }
+  const isChatPage = location.pathname === '/'
 
   return (
     <aside
-      className={`shrink-0 h-full border-r border-border bg-surface flex flex-col transition-all duration-200 ${
-        collapsed ? 'w-[68px]' : 'w-64'
-      }`}
+      className={`
+        fixed left-0 top-14 bottom-0 z-50
+        w-64
+        bg-surface
+        border-r border-border
+        flex flex-col
+        transition-all duration-200 ease-out
+        shadow-sm
+
+        ${
+          mobileOpen
+            ? 'translate-x-0'
+            : '-translate-x-full'
+        }
+
+        md:static
+        md:top-auto
+        md:bottom-auto
+        md:z-auto
+        md:h-full
+        md:translate-x-0
+
+        ${
+          collapsed
+            ? 'md:w-[68px]'
+            : 'md:w-64'
+        }
+      `}
     >
+      {/* New Chat */}
       <div className="p-2.5">
         <button
-          onClick={handleNewChat}
+          type="button"
+          onClick={onNewChat}
           title={collapsed ? 'New chat' : undefined}
-          className="w-full flex items-center gap-2 justify-center h-9 rounded-md bg-primary text-white
-                     text-[13px] font-medium hover:bg-primary-dark transition-colors shadow-nav-glow"
+          className="
+            w-full
+            h-9
+            rounded-lg
+            bg-primary
+            text-white
+            flex
+            items-center
+            justify-center
+            gap-2
+            text-[13px]
+            font-semibold
+            hover:bg-primary-dark
+            transition-all
+            duration-150
+            shadow-nav-glow
+          "
         >
-          <Plus className="w-4 h-4 shrink-0" strokeWidth={2} />
-          {!collapsed && 'New chat'}
+          <Plus
+            className="w-4 h-4 shrink-0"
+            strokeWidth={2}
+          />
+
+          <span
+            className={
+              collapsed
+                ? 'md:hidden'
+                : ''
+            }
+          >
+            New chat
+          </span>
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2.5 pb-2 flex flex-col gap-0.5">
-        {!collapsed && (
-          <div className="px-2.5 py-1.5 text-[10.5px] font-semibold text-ink-secondary/80 uppercase tracking-wide">
-            Recent
-          </div>
-        )}
-        {conversations.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => handleSelectChat(c.id)}
-            title={collapsed ? c.title : undefined}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-[13.5px] font-medium text-left
-                        transition-all duration-150
-              ${
-                c.id === activeId
-                  ? 'bg-primary/8 text-primary shadow-nav-glow'
-                  : 'text-ink-secondary hover:bg-primary/5 hover:text-ink hover:shadow-nav-glow'
-              }`}
-          >
-            <MessageSquareText className="w-4 h-4 shrink-0" strokeWidth={2} />
-            {!collapsed && <span className="truncate flex-1">{c.title}</span>}
-          </button>
-        ))}
+      {/* Recent Chats */}
+      <nav className="flex-1 overflow-y-auto px-2.5 pb-3">
+        <div
+          className={`
+            px-2.5
+            pt-2
+            pb-2
+            text-[10.5px]
+            font-semibold
+            text-ink-secondary/70
+            uppercase
+            tracking-[0.08em]
+
+            ${collapsed ? 'md:hidden' : ''}
+          `}
+        >
+          Recent
+        </div>
+
+        <div className="flex flex-col gap-0.5">
+          {conversations.map((conversation) => {
+            const active =
+              isChatPage &&
+              conversation.id === activeId
+
+            return (
+              <button
+                type="button"
+                key={conversation.id}
+                onClick={() =>
+                  onSelectChat(conversation.id)
+                }
+                title={
+                  collapsed
+                    ? conversation.title
+                    : undefined
+                }
+                className={`
+                  group
+                  w-full
+                  flex
+                  items-center
+                  gap-3
+                  px-3
+                  py-2.5
+                  rounded-lg
+                  text-left
+                  text-[13.5px]
+                  font-medium
+                  transition-all
+                  duration-150
+
+                  ${
+                    active
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-ink-secondary hover:bg-hover hover:text-ink'
+                  }
+                `}
+              >
+                <MessageSquareText
+                  className={`
+                    w-4 h-4
+                    shrink-0
+
+                    ${
+                      active
+                        ? 'text-primary'
+                        : 'text-ink-secondary'
+                    }
+                  `}
+                  strokeWidth={2}
+                />
+
+                <span
+                  className={`
+                    truncate flex-1
+                    ${collapsed ? 'md:hidden' : ''}
+                  `}
+                >
+                  {conversation.title}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </nav>
 
-      <div className="border-t border-border py-3 px-2.5 flex flex-col gap-0.5">
+      {/* Footer */}
+      <div className="border-t border-border p-2.5 flex flex-col gap-0.5">
         {FOOTER_ITEMS.map((item) => (
-          <SidebarLink key={item.to} {...item} collapsed={collapsed} />
+          <SidebarLink
+            key={item.to}
+            {...item}
+            collapsed={collapsed}
+            onNavigate={onMobileClose}
+          />
         ))}
+
         <button
+          type="button"
           onClick={onToggle}
-          className="mt-1 flex items-center gap-3 px-3 py-2.5 rounded-md text-ink-secondary
-                     hover:bg-hover hover:text-ink transition-colors text-[13px] font-medium"
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="
+            hidden md:flex
+            items-center
+            gap-3
+            px-3
+            py-2.5
+            mt-1
+            rounded-lg
+            text-[13px]
+            font-medium
+            text-ink-secondary
+            hover:bg-hover
+            hover:text-ink
+            transition-colors
+          "
         >
-          {collapsed ? <ChevronsRight className="w-4 h-4 shrink-0" /> : <ChevronsLeft className="w-4 h-4 shrink-0" />}
-          {!collapsed && <span>Collapse</span>}
+          {collapsed ? (
+            <ChevronsRight className="w-4 h-4 shrink-0" />
+          ) : (
+            <ChevronsLeft className="w-4 h-4 shrink-0" />
+          )}
+
+          {!collapsed && (
+            <span>Collapse</span>
+          )}
         </button>
       </div>
     </aside>
   )
 }
 
-function SidebarLink({ to, label, icon: Icon, collapsed }) {
+function SidebarLink({
+  to,
+  label,
+  icon: Icon,
+  collapsed,
+  onNavigate,
+}) {
   return (
     <NavLink
       to={to}
+      onClick={onNavigate}
       title={collapsed ? label : undefined}
       className={({ isActive }) =>
-        `group flex items-center gap-3 px-3 py-2.5 rounded-md text-[13.5px] font-medium
-         transition-all duration-150
-         ${
-           isActive
-             ? 'bg-primary/8 text-primary shadow-nav-glow'
-             : 'text-ink-secondary hover:bg-primary/5 hover:text-ink hover:shadow-nav-glow'
-         }`
+        `
+          flex
+          items-center
+          gap-3
+          px-3
+          py-2.5
+          rounded-lg
+          text-[13.5px]
+          font-medium
+          transition-all
+          duration-150
+
+          ${
+            isActive
+              ? 'bg-primary/10 text-primary'
+              : 'text-ink-secondary hover:bg-hover hover:text-ink'
+          }
+        `
       }
     >
-      <Icon className="w-4 h-4 shrink-0" strokeWidth={2} />
-      {!collapsed && <span className="truncate">{label}</span>}
+      <Icon
+        className="w-4 h-4 shrink-0"
+        strokeWidth={2}
+      />
+
+      <span
+        className={`
+          truncate
+          ${collapsed ? 'md:hidden' : ''}
+        `}
+      >
+        {label}
+      </span>
     </NavLink>
   )
 }
