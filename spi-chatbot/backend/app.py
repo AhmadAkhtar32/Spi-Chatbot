@@ -669,6 +669,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=gemini_friendly_error(exc))
 
+from demo_routes import router as demo_router
+app.include_router(demo_router)
 
 if frontend_dir.exists():
     app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
