@@ -25,6 +25,7 @@ function getGreeting() {
   return 'Good evening'
 }
 
+// Legacy preview only. Demo mode uses verified module licenses.
 const LICENSED_MODULES = ['financials']
 
 const MODULE_LABELS = {
@@ -39,7 +40,8 @@ const EXPERT_ROUTES = {
   implementation_expert: 'implementation',
 }
 
-const ALL_SUGGESTIONS = [
+// Legacy preview only. Demo mode fetches its questions.
+const LEGACY_SUGGESTIONS = [
   {
     module: 'financials',
     icon: FileText,
@@ -81,7 +83,8 @@ const ALL_SUGGESTIONS = [
     category: 'Performance',
     label: 'Month-end slowness',
     description: 'Troubleshoot performance during month-end close.',
-    prompt: 'Why does SPI slow down specifically during month-end close?',
+    prompt:
+      'Why does SPI slow down specifically during month-end close?',
   },
   {
     module: 'financials',
@@ -94,127 +97,11 @@ const ALL_SUGGESTIONS = [
   },
 ]
 
-// Demo suggestions match documents available to each expert and module.
-// The backend still decides what each user is allowed to access.
-const DEMO_SUGGESTIONS = [
-  {
-    expert: 'support_expert',
-    module: 'financial',
-    icon: FileText,
-    category: 'Vouchers',
-    label: 'Posting and verification',
-    description: 'Understand when a voucher becomes locked.',
-    prompt:
-      'What happens when a GL voucher is posted, and how is that different from verification?',
-  },
-  {
-    expert: 'support_expert',
-    module: 'financial',
-    icon: BookOpen,
-    category: 'Voucher entry',
-    label: 'Checks before saving',
-    description: 'Review the balance and voucher date rules.',
-    prompt: 'What must be checked before saving a GL voucher?',
-  },
-  {
-    expert: 'support_expert',
-    module: 'financial',
-    icon: AlertCircle,
-    category: 'Voucher entry',
-    label: 'Period date rules',
-    description: 'Check which voucher dates are accepted.',
-    prompt: 'Which dates are allowed for a GL voucher in the current period?',
-  },
-  {
-    expert: 'support_expert',
-    module: 'inventory',
-    icon: BarChart3,
-    category: 'Stock support',
-    label: 'Different stock counts',
-    description: 'Troubleshoot a pending warehouse transfer.',
-    prompt:
-      'Why does the same item show different stock on the Stock Status Report versus the Warehouse Transfer screen?',
-  },
-  {
-    expert: 'support_expert',
-    module: 'inventory',
-    icon: FileText,
-    category: 'Stock support',
-    label: 'Missing reorder suggestion',
-    description: 'Check the preferred supplier configuration.',
-    prompt:
-      'Stock is below the reorder point, but no suggested Purchase Order appears. What should I check?',
-  },
-  {
-    expert: 'support_expert',
-    module: 'inventory',
-    icon: AlertCircle,
-    category: 'Stock support',
-    label: 'Barcode not recognized',
-    description: 'Diagnose a stock count scan.',
-    prompt:
-      'A barcode scan during a stock count says Item Not Found. What is a likely cause?',
-  },
-  {
-    expert: 'implementation_expert',
-    module: 'financial',
-    icon: FileText,
-    category: 'GL setup',
-    label: 'Create voucher types',
-    description: 'Configure a new GL voucher type.',
-    prompt: 'How do I create a new GL voucher type?',
-  },
-  {
-    expert: 'implementation_expert',
-    module: 'financial',
-    icon: BookOpen,
-    category: 'GL setup',
-    label: 'Add account codes',
-    description: 'Set up the Chart of Accounts.',
-    prompt: 'How do I add an account code in the Chart of Accounts?',
-  },
-  {
-    expert: 'implementation_expert',
-    module: 'financial',
-    icon: Copy,
-    category: 'Vouchers',
-    label: 'Save default vouchers',
-    description: 'Create a reusable voucher template.',
-    prompt:
-      'How do I save a voucher as a default voucher for repeated entries?',
-  },
-  {
-    expert: 'implementation_expert',
-    module: 'inventory',
-    icon: BookOpen,
-    category: 'Inventory setup',
-    label: 'Setup prerequisites',
-    description: 'Confirm what the client must provide first.',
-    prompt:
-      'What must be finalized before Inventory module configuration can begin?',
-  },
-  {
-    expert: 'implementation_expert',
-    module: 'inventory',
-    icon: FileText,
-    category: 'Inventory setup',
-    label: 'Bin location codes',
-    description: 'Use the format required by barcode scanning.',
-    prompt: 'What format must Bin Location codes follow?',
-  },
-  {
-    expert: 'implementation_expert',
-    module: 'inventory',
-    icon: BarChart3,
-    category: 'Go-live',
-    label: 'Inventory checklist',
-    description: 'Review the documented go-live checks.',
-    prompt: 'What should be checked on the Inventory go-live checklist?',
-  },
-]
-
-export default function UnifiedChatPage({ demoMode = false }) {
+export default function UnifiedChatPage({
+  demoMode = false,
+}) {
   const {
+    conversationId,
     messages,
     setMessages,
     demoSession,
@@ -226,6 +113,15 @@ export default function UnifiedChatPage({ demoMode = false }) {
   const [inputValue, setInputValue] = useState('')
   const [selectedExpert, setSelectedExpert] = useState('')
   const [selectedModule, setSelectedModule] = useState('')
+
+  const [demoSuggestions, setDemoSuggestions] =
+    useState([])
+
+  const [suggestionsLoading, setSuggestionsLoading] =
+    useState(false)
+
+  const [suggestionsError, setSuggestionsError] =
+    useState('')
 
   const scrollRef = useRef(null)
   const activeTokenRef = useRef(demoSession?.token)
@@ -244,30 +140,141 @@ export default function UnifiedChatPage({ demoMode = false }) {
     if (!demoMode) return
 
     setSelectedExpert(
-      demoSession?.user.experts?.find((name) => EXPERT_ROUTES[name]) || ''
+      demoSession?.user.experts?.find(
+        (name) => EXPERT_ROUTES[name]
+      ) || ''
     )
-    setSelectedModule(demoSession?.user.modules?.[0] || '')
+
+    setSelectedModule(
+      demoSession?.user.modules?.[0] || ''
+    )
+
     setInputValue('')
   }, [demoMode, demoSession?.token])
 
+  useEffect(() => {
+    if (
+      !demoMode ||
+      !demoSession?.token ||
+      !selectedExpert ||
+      !selectedModule
+    ) {
+      return
+    }
+
+    const controller = new AbortController()
+
+    setDemoSuggestions([])
+    setSuggestionsError('')
+    setSuggestionsLoading(true)
+
+    const query = new URLSearchParams({
+      expert: selectedExpert,
+      module: selectedModule,
+    })
+
+    fetch(
+      `${API_BASE}/api/demo/experts/suggestions?${query}`,
+      {
+        cache: 'no-store',
+        signal: controller.signal,
+        headers: {
+          Authorization:
+            `Bearer ${demoSession.token}`,
+        },
+      }
+    )
+      .then(async (response) => {
+        if (response.status === 401) {
+          switchDemoUser(
+            'Demo session expired. Enter the presenter PIN again.'
+          )
+          return null
+        }
+
+        if (response.status === 403) {
+          throw new Error(
+            'Suggestions are not licensed for this expert or module.'
+          )
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            `Could not load suggestions (${response.status}).`
+          )
+        }
+
+        return response.json()
+      })
+      .then((data) => {
+        if (
+          !controller.signal.aborted &&
+          data
+        ) {
+          setDemoSuggestions(
+            data.suggestions || []
+          )
+        }
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          setSuggestionsError(
+            error.message ||
+            'Could not load suggestions.'
+          )
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setSuggestionsLoading(false)
+        }
+      })
+
+    return () => controller.abort()
+  }, [
+    demoMode,
+    demoSession?.token,
+    selectedExpert,
+    selectedModule,
+    conversationId,
+  ])
+
   const allowedExperts =
-    demoSession?.user.experts?.filter((name) => EXPERT_ROUTES[name]) || []
+    demoSession?.user.experts?.filter(
+      (name) => EXPERT_ROUTES[name]
+    ) || []
 
   const allowedModules = demoMode
     ? demoSession?.user.modules || []
     : LICENSED_MODULES
 
   const suggestions = demoMode
-    ? DEMO_SUGGESTIONS.filter(
-        (item) =>
-          item.expert === selectedExpert &&
-          item.module === selectedModule
-      )
-    : ALL_SUGGESTIONS.filter((item) =>
-        LICENSED_MODULES.includes(item.module)
+    ? demoSuggestions.map((item, index) => ({
+        icon: [
+          FileText,
+          BookOpen,
+          BarChart3,
+          Copy,
+          RotateCcw,
+          AlertCircle,
+        ][index % 6],
+        category:
+          MODULE_LABELS[selectedModule] ||
+          selectedModule,
+        label: item.question,
+        description: `From ${item.source}`,
+        prompt: item.question,
+        source: item.source,
+      }))
+    : LEGACY_SUGGESTIONS.filter((item) =>
+        LICENSED_MODULES.includes(
+          item.module
+        )
       )
 
-  const moduleLabel = MODULE_LABELS[selectedModule] || selectedModule
+  const moduleLabel =
+    MODULE_LABELS[selectedModule] ||
+    selectedModule
 
   const subtitle = demoMode
     ? `Ask the ${
@@ -288,17 +295,27 @@ export default function UnifiedChatPage({ demoMode = false }) {
     })
   }, [messages, loading])
 
-  async function handleSend(text) {
+  async function handleSend(
+    text,
+    source = null
+  ) {
     if (
       !text?.trim() ||
       loading ||
-      (demoMode &&
-        (!demoSession || !selectedExpert || !selectedModule))
+      (
+        demoMode &&
+        (
+          !demoSession ||
+          !selectedExpert ||
+          !selectedModule
+        )
+      )
     ) {
       return
     }
 
-    const tokenAtSend = demoSession?.token
+    const tokenAtSend =
+      demoSession?.token
 
     const newUserMessage = {
       role: 'user',
@@ -306,89 +323,133 @@ export default function UnifiedChatPage({ demoMode = false }) {
       timestamp: Date.now(),
     }
 
-    setMessages((prev) => [...prev, newUserMessage])
+    setMessages((previous) => [
+      ...previous,
+      newUserMessage,
+    ])
+
     setLoading(true)
 
     try {
-      const res = demoMode
+      const response = demoMode
         ? await fetch(
-            `${API_BASE}/api/demo/experts/${EXPERT_ROUTES[selectedExpert]}`,
+            `${API_BASE}/api/demo/experts/${
+              EXPERT_ROUTES[selectedExpert]
+            }`,
             {
               method: 'POST',
               cache: 'no-store',
               headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${tokenAtSend}`,
+                'Content-Type':
+                  'application/json',
+                Authorization:
+                  `Bearer ${tokenAtSend}`,
               },
               body: JSON.stringify({
                 question: text,
                 module: selectedModule,
+                source,
               }),
             }
           )
-        : await fetch(`${API_BASE}/api/unified-chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message: text,
-              history: messages.slice(-8).map((message) => ({
-                role: message.role,
-                content: message.content,
-              })),
-            }),
-          })
+        : await fetch(
+            `${API_BASE}/api/unified-chat`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type':
+                  'application/json',
+              },
+              body: JSON.stringify({
+                message: text,
+                history: messages
+                  .slice(-8)
+                  .map((message) => ({
+                    role: message.role,
+                    content:
+                      message.content,
+                  })),
+              }),
+            }
+          )
 
-      if (demoMode && activeTokenRef.current !== tokenAtSend) {
+      if (
+        demoMode &&
+        activeTokenRef.current !==
+          tokenAtSend
+      ) {
         return
       }
 
-      if (demoMode && res.status === 401) {
+      if (
+        demoMode &&
+        response.status === 401
+      ) {
         switchDemoUser(
           'Demo session expired. Enter the presenter PIN again.'
         )
         return
       }
 
-      if (!res.ok) {
-        if (demoMode && res.status === 403) {
+      if (!response.ok) {
+        if (
+          demoMode &&
+          response.status === 403
+        ) {
           throw new Error(
             'This expert or module is not licensed for this user.'
           )
         }
 
-        throw new Error(`Assistant request failed (${res.status}).`)
+        throw new Error(
+          `Assistant request failed (${response.status}).`
+        )
       }
 
-      const data = await res.json()
+      const data = await response.json()
 
-      if (demoMode && activeTokenRef.current !== tokenAtSend) {
+      if (
+        demoMode &&
+        activeTokenRef.current !==
+          tokenAtSend
+      ) {
         return
       }
 
-      setMessages((prev) => [
-        ...prev,
+      setMessages((previous) => [
+        ...previous,
         {
           role: 'assistant',
           content:
             data.reply ||
             'I received an empty response from the backend service.',
-          sources: demoMode ? data.sources || [] : undefined,
+          sources: demoMode
+            ? data.sources || []
+            : undefined,
           timestamp: Date.now(),
         },
       ])
-    } catch (err) {
-      console.error('Chat request failed:', err)
+    } catch (error) {
+      console.error(
+        'Chat request failed:',
+        error
+      )
 
-      if (demoMode && activeTokenRef.current !== tokenAtSend) {
+      if (
+        demoMode &&
+        activeTokenRef.current !==
+          tokenAtSend
+      ) {
         return
       }
 
-      setMessages((prev) => [
-        ...prev,
+      setMessages((previous) => [
+        ...previous,
         {
           role: 'assistant',
           content: demoMode
-            ? err.message || 'The demo expert is unavailable right now.'
+            ? error.message ||
+              'The demo expert is unavailable right now.'
             : 'Unable to reach the backend service. Confirm the API server is running.',
           timestamp: Date.now(),
         },
@@ -404,26 +465,35 @@ export default function UnifiedChatPage({ demoMode = false }) {
   }
 
   function changeExpert(event) {
-    setSelectedExpert(event.target.value)
+    setSelectedExpert(
+      event.target.value
+    )
+
     resetDemoChats()
     setInputValue('')
   }
 
   function changeModule(event) {
-    setSelectedModule(event.target.value)
+    setSelectedModule(
+      event.target.value
+    )
+
     resetDemoChats()
     setInputValue('')
   }
 
-  const hasMessages = messages.length > 0
+  const hasMessages =
+    messages.length > 0
 
   return (
     <div className="flex-1 relative overflow-hidden flex flex-col">
       <AnimatedBackground />
 
       {demoMode &&
-        (allowedExperts.length > 1 ||
-          allowedModules.length > 1) && (
+        (
+          allowedExperts.length > 1 ||
+          allowedModules.length > 1
+        ) && (
           <div className="relative z-10 shrink-0 border-b border-border bg-surface/90 px-5 py-2 flex flex-wrap gap-3 items-center text-xs">
             {allowedExperts.length > 1 && (
               <label>
@@ -434,13 +504,19 @@ export default function UnifiedChatPage({ demoMode = false }) {
                   onChange={changeExpert}
                   className="ml-1 rounded-md border border-border bg-bg px-2 py-1"
                 >
-                  {allowedExperts.map((name) => (
-                    <option key={name} value={name}>
-                      {name === 'support_expert'
-                        ? 'Support'
-                        : 'Implementation'}
-                    </option>
-                  ))}
+                  {allowedExperts.map(
+                    (name) => (
+                      <option
+                        key={name}
+                        value={name}
+                      >
+                        {name ===
+                        'support_expert'
+                          ? 'Support'
+                          : 'Implementation'}
+                      </option>
+                    )
+                  )}
                 </select>
               </label>
             )}
@@ -454,11 +530,17 @@ export default function UnifiedChatPage({ demoMode = false }) {
                   onChange={changeModule}
                   className="ml-1 rounded-md border border-border bg-bg px-2 py-1"
                 >
-                  {allowedModules.map((name) => (
-                    <option key={name} value={name}>
-                      {MODULE_LABELS[name] || name}
-                    </option>
-                  ))}
+                  {allowedModules.map(
+                    (name) => (
+                      <option
+                        key={name}
+                        value={name}
+                      >
+                        {MODULE_LABELS[name] ||
+                          name}
+                      </option>
+                    )
+                  )}
                 </select>
               </label>
             )}
@@ -466,10 +548,16 @@ export default function UnifiedChatPage({ demoMode = false }) {
         )}
 
       {!hasMessages ? (
-        <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-center px-6 py-5 relative z-10">
           <motion.h1
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{
+              opacity: 0,
+              y: 10,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
             transition={{
               duration: 0.5,
               ease: 'easeOut',
@@ -518,17 +606,58 @@ export default function UnifiedChatPage({ demoMode = false }) {
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {suggestions.map((suggestion) => (
-                <SuggestionChip
-                  key={`${suggestion.module}-${suggestion.label}`}
-                  icon={suggestion.icon}
-                  label={suggestion.label}
-                  description={suggestion.description}
-                  category={suggestion.category}
-                  onClick={() => handleSend(suggestion.prompt)}
-                />
-              ))}
+              {suggestions.map(
+                (suggestion) => (
+                  <SuggestionChip
+                    key={suggestion.label}
+                    icon={suggestion.icon}
+                    label={suggestion.label}
+                    description={
+                      suggestion.description
+                    }
+                    category={
+                      suggestion.category
+                    }
+                    onClick={() =>
+                      handleSend(
+                        suggestion.prompt,
+                        suggestion.source ||
+                          null
+                      )
+                    }
+                  />
+                )
+              )}
             </div>
+
+            {demoMode &&
+              suggestionsLoading && (
+                <p
+                  role="status"
+                  className="mt-4 text-center text-xs text-ink-secondary"
+                >
+                  Finding questions in your approved reference material…
+                </p>
+              )}
+
+            {demoMode &&
+              suggestionsError && (
+                <p
+                  role="alert"
+                  className="mt-4 text-center text-xs text-red-600"
+                >
+                  {suggestionsError}
+                </p>
+              )}
+
+            {demoMode &&
+              !suggestionsLoading &&
+              !suggestionsError &&
+              suggestions.length < 6 && (
+                <p className="mt-4 text-center text-xs text-ink-secondary">
+                  {suggestions.length} approved questions available for this expert and module.
+                </p>
+              )}
           </div>
         </div>
       ) : (
@@ -537,17 +666,27 @@ export default function UnifiedChatPage({ demoMode = false }) {
           className="flex-1 overflow-y-auto relative z-10"
         >
           <div className="max-w-3xl mx-auto px-6 py-6 flex flex-col gap-4">
-            {messages.map((message, index) => (
-              <ChatMessage
-                key={index}
-                role={message.role}
-                content={message.content}
-                sources={message.sources}
-                timestamp={message.timestamp}
-              />
-            ))}
+            {messages.map(
+              (message, index) => (
+                <ChatMessage
+                  key={index}
+                  role={message.role}
+                  content={
+                    message.content
+                  }
+                  sources={
+                    message.sources
+                  }
+                  timestamp={
+                    message.timestamp
+                  }
+                />
+              )
+            )}
 
-            {loading && <TypingIndicator />}
+            {loading && (
+              <TypingIndicator />
+            )}
           </div>
         </div>
       )}
@@ -557,11 +696,19 @@ export default function UnifiedChatPage({ demoMode = false }) {
           onSend={handleSend}
           disabled={loading}
           value={inputValue}
-          onValueChange={setInputValue}
+          onValueChange={
+            setInputValue
+          }
           onClear={handleClear}
-          hasMessages={hasMessages}
-          inputPlaceholder={placeholder}
-          voiceEnabled={!demoMode}
+          hasMessages={
+            hasMessages
+          }
+          inputPlaceholder={
+            placeholder
+          }
+          voiceEnabled={
+            !demoMode
+          }
         />
       </div>
     </div>
