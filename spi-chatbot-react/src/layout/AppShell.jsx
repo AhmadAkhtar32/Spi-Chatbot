@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+
 import TopBar from './TopBar.jsx'
 import Sidebar from './Sidebar.jsx'
 import { API_BASE } from '../api.js'
@@ -45,8 +46,7 @@ export default function AppShell({ demoMode = false }) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  // Demo chats stay in memory. Switching users must not reveal
-  // another demo user's conversations from browser storage.
+  // Demo chats stay in memory, including when a presenter changes users.
   const [conversations, setConversations] = useState(() =>
     demoMode ? [makeConversation()] : loadConversations()
   )
@@ -59,11 +59,15 @@ export default function AppShell({ demoMode = false }) {
 
   const [activeId, setActiveId] = useState(() => {
     try {
-      const savedId = demoMode ? null : localStorage.getItem(ACTIVE_CHAT_KEY)
+      const savedId = demoMode
+        ? null
+        : localStorage.getItem(ACTIVE_CHAT_KEY)
 
       if (
         savedId &&
-        conversations.some((conversation) => conversation.id === savedId)
+        conversations.some(
+          (conversation) => conversation.id === savedId
+        )
       ) {
         return savedId
       }
@@ -75,8 +79,9 @@ export default function AppShell({ demoMode = false }) {
   })
 
   const activeConversation =
-    conversations.find((conversation) => conversation.id === activeId) ??
-    conversations[0]
+    conversations.find(
+      (conversation) => conversation.id === activeId
+    ) ?? conversations[0]
 
   useEffect(() => {
     function handleEscape(event) {
@@ -153,7 +158,6 @@ export default function AppShell({ demoMode = false }) {
       conversation,
       ...previous,
     ])
-
     setActiveId(conversation.id)
     setMobileOpen(false)
     navigate('/')
@@ -233,7 +237,6 @@ export default function AppShell({ demoMode = false }) {
 
   async function openDemo(event) {
     event.preventDefault()
-
     if (openingDemo || !demoPin.trim()) return
 
     setOpeningDemo(true)
@@ -253,14 +256,20 @@ export default function AppShell({ demoMode = false }) {
 
       if (!login.ok) {
         if (login.status === 401) {
-          throw new Error('Incorrect presenter PIN or unavailable demo user.')
+          throw new Error(
+            'Incorrect presenter PIN or unavailable demo user.'
+          )
         }
 
         if (login.status === 404) {
-          throw new Error('Enable demo sessions in the backend and restart it.')
+          throw new Error(
+            'Enable demo sessions in the backend and restart it.'
+          )
         }
 
-        throw new Error(`Could not open demo session (${login.status}).`)
+        throw new Error(
+          `Could not open demo session (${login.status}).`
+        )
       }
 
       const { access_token: token } = await login.json()
@@ -271,7 +280,9 @@ export default function AppShell({ demoMode = false }) {
       })
 
       if (!profile.ok) {
-        throw new Error(`Could not load the demo user (${profile.status}).`)
+        throw new Error(
+          `Could not load the demo user (${profile.status}).`
+        )
       }
 
       const user = await profile.json()
@@ -282,16 +293,33 @@ export default function AppShell({ demoMode = false }) {
           name === 'implementation_expert'
       )
 
-      if (!hasExpert || !user.modules?.length) {
+      const hasBusinessData = user.permissions?.some(
+        (name) =>
+          [
+            'stock.read',
+            'sales_orders.read',
+            'purchase_orders.read',
+            'tickets.read',
+            'payroll.read',
+            'payroll.read_self',
+          ].includes(name)
+      )
+
+      if (
+        (!hasExpert && !hasBusinessData) ||
+        !user.modules?.length
+      ) {
         throw new Error(
-          'This demo user has no available document expert or module.'
+          'This demo user has no available expert or business data.'
         )
       }
 
       resetDemoChats()
       setDemoSession({ token, user })
     } catch (error) {
-      setDemoError(error.message || 'Could not open the assistant.')
+      setDemoError(
+        error.message || 'Could not open the assistant.'
+      )
     } finally {
       setDemoPin('')
       setOpeningDemo(false)
@@ -333,49 +361,70 @@ export default function AppShell({ demoMode = false }) {
                   <h1 className="text-xl font-semibold">
                     Open a demo session
                   </h1>
-
                   <p className="text-sm text-ink-secondary mt-1">
-                    Choose a fictional SPIA user and enter the presenter PIN.
+                    Choose a fictional SPIA user and enter the
+                    presenter PIN.
                   </p>
                 </div>
 
                 <label className="block text-sm font-medium">
                   Demo user
-
                   <select
                     value={demoPerson}
-                    onChange={(event) => setDemoPerson(event.target.value)}
+                    onChange={(event) =>
+                      setDemoPerson(event.target.value)
+                    }
                     className="mt-2 w-full rounded-lg border border-border bg-bg px-3 py-2.5"
                   >
                     <option value="demo_support">
                       Support · Financial
                     </option>
-
                     <option value="demo_inventory_support">
                       Support · Inventory
                     </option>
-
                     <option value="demo_implementation">
                       Implementation · Financial and Inventory
+                    </option>
+                    <option value="demo_operations">
+                      Operations · Stock and orders
+                    </option>
+                    <option value="demo_dual_party">
+                      Partner · Customer and supplier
+                    </option>
+                    <option value="demo_employee">
+                      Employee · Own payroll
+                    </option>
+                    <option value="demo_hr">
+                      HR · Payroll
+                    </option>
+                    <option value="demo_bi">
+                      Internal BI · Source data preview
+                    </option>
+                    <option value="demo_document_clerk">
+                      Document clerk · Source data preview
                     </option>
                   </select>
                 </label>
 
                 <label className="block text-sm font-medium">
                   SPIA presenter PIN
-
                   <input
                     type="password"
                     autoComplete="off"
                     value={demoPin}
-                    onChange={(event) => setDemoPin(event.target.value)}
+                    onChange={(event) =>
+                      setDemoPin(event.target.value)
+                    }
                     className="mt-2 w-full rounded-lg border border-border bg-bg px-3 py-2.5"
                     required
                   />
                 </label>
 
                 {demoError && (
-                  <p role="alert" className="text-sm text-red-600">
+                  <p
+                    role="alert"
+                    className="text-sm text-red-600"
+                  >
                     {demoError}
                   </p>
                 )}
@@ -395,9 +444,7 @@ export default function AppShell({ demoMode = false }) {
                 <div className="shrink-0 border-b border-border bg-surface px-4 py-2 flex items-center justify-between gap-3 text-xs text-ink-secondary">
                   <span className="truncate">
                     Team demo · {demoSession.user.id} ·{' '}
-                    {demoSession.user.role === 'support'
-                      ? 'Support Expert'
-                      : 'Implementation Expert'}
+                    {demoSession.user.role.replace(/_/g, ' ')}
                   </span>
 
                   <button
@@ -412,8 +459,10 @@ export default function AppShell({ demoMode = false }) {
 
               <Outlet
                 context={{
-                  conversationId: activeConversation?.id ?? null,
-                  messages: activeConversation?.messages ?? [],
+                  conversationId:
+                    activeConversation?.id ?? null,
+                  messages:
+                    activeConversation?.messages ?? [],
                   setMessages: setActiveMessages,
                   demoSession,
                   switchDemoUser,

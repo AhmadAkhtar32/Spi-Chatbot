@@ -106,6 +106,9 @@ RELEVANCE_THRESHOLD = 0.35
 
 app = FastAPI(title="SPI Assistant API")
 
+from demo_business_routes import router as demo_business_router
+app.include_router(demo_business_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
