@@ -672,5 +672,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
 from demo_routes import router as demo_router
 app.include_router(demo_router)
 
+from demo_guard import install_demo_guard
+install_demo_guard(app)
+
 if frontend_dir.exists():
     app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
