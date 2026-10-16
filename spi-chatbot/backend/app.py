@@ -672,6 +672,9 @@ async def transcribe_audio(file: UploadFile = File(...)):
 from demo_routes import router as demo_router
 app.include_router(demo_router)
 
+from demo_expert_routes import router as demo_expert_router
+app.include_router(demo_expert_router)
+
 from demo_guard import install_demo_guard
 install_demo_guard(app)
 
