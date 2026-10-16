@@ -1,7 +1,6 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import AppShell from './layout/AppShell.jsx'
 import UnifiedChatPage from './pages/UnifiedChatPage.jsx'
-import DemoChatPage from './pages/DemoChatPage.jsx'
 import ProjectKnowledgeExpertPage from './pages/ProjectKnowledgeExpertPage.jsx'
 import DocumentGeneratorPage from './pages/DocumentGeneratorPage.jsx'
 import ReportsPage from './pages/Reports.jsx'
@@ -15,7 +14,12 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {demoMode ? (
-          <Route path="*" element={<DemoChatPage />} />
+          <Route element={<AppShell demoMode />}>
+            <Route path="/" element={<UnifiedChatPage demoMode />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/help" element={<HelpPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
         ) : (
           <Route element={<AppShell />}>
             <Route path="/" element={<UnifiedChatPage />} />

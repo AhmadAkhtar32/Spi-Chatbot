@@ -1,0 +1,27 @@
+{
+  "support": {
+    "financial": [
+      "gl_process.txt",
+      "gl_enquiries.txt",
+      "gl_reports.txt",
+      "gl_select.txt"
+    ],
+    "inventory": [
+      "inventory_incidents.txt"
+    ]
+  },
+  "implementation": {
+    "financial": [
+      "gl_setup.txt",
+      "gl_vouchers.txt",
+      "gl_using_general_ledger.txt",
+      "gl_reports.txt"
+    ],
+    "inventory": [
+      "inventory_setup_guide.txt"
+    ],
+    "payroll": [
+      "payroll_setup_guide.txt"
+    ]
+  }
+}
