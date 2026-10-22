@@ -1,13 +1,8 @@
-"""Role- and module-checked document experts for fictional demo users."""
+"""Licensed document experts using explicitly published knowledge."""
 
-import hashlib
-import json
 import logging
 import os
-import re
 import secrets
-from functools import lru_cache
-from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -16,12 +11,17 @@ from pydantic import BaseModel, Field
 from demo_policy import AccessDenied, authorize_expert
 from demo_routes import require_demo_identity
 from groq_utils import generate_with_retry
+from published_knowledge import (
+    KnowledgeUnavailable,
+    approved_sources,
+    get_published,
+    published_version,
+)
 from rag import (
-    KnowledgeBase,
+    _valid_vector,
     build_answer_prompt,
     cosine_similarity,
     embed_texts,
-    load_documents,
 )
 
 
@@ -30,88 +30,24 @@ router = APIRouter(
     tags=["Demo experts"],
 )
 
-KNOWLEDGE_DIR = Path(__file__).resolve().parent / "knowledge"
-APPROVED_SOURCES = (
-    Path(__file__).resolve().parent /
-    "approved_demo_sources.json"
-)
-
 MIN_SCORE = 0.35
-
-FAQ = re.compile(
-    r"(?m)^Q:\s*(.+?)\s*\r?\nA:\s*(\S[^\r\n]*)"
-)
-
-INCIDENT = re.compile(
-    r"(?m)^INCIDENT TYPE:\s*(.+)$"
-)
 
 
 class ExpertQuestion(BaseModel):
     module: Literal["financial", "inventory", "payroll"]
     question: str = Field(min_length=3, max_length=1000)
-    source: str | None = None
+    source: str | None = Field(default=None, max_length=255)
 
 
-def _folder_fingerprint(folder: Path) -> str:
-    """Change the knowledge-base cache when documents change."""
-    digest = hashlib.sha256()
-
-    for path in sorted(folder.glob("*.txt")):
-        digest.update(path.name.encode("utf-8"))
-        digest.update(path.read_bytes())
-
-    return digest.hexdigest()
-
-
-@lru_cache(maxsize=4)
-def _knowledge_base_for_version(
-    name: str,
-    version: str,
-) -> KnowledgeBase:
-    return KnowledgeBase(KNOWLEDGE_DIR / name)
-
-
-def _knowledge_base(name: str) -> KnowledgeBase:
-    folder = KNOWLEDGE_DIR / name
-
-    return _knowledge_base_for_version(
-        name,
-        _folder_fingerprint(folder),
+def _fail(status: int, detail: str):
+    raise HTTPException(
+        status_code=status,
+        detail=detail,
+        headers={"Cache-Control": "no-store"},
     )
 
 
-def _approved_sources(name: str, module: str) -> set[str]:
-    """Only reviewed files may be searched or suggested."""
-    try:
-        manifest = json.loads(
-            APPROVED_SOURCES.read_text(encoding="utf-8")
-        )
-
-        files = manifest.get(name, {}).get(module, [])
-
-        if not isinstance(files, list) or any(
-            not isinstance(item, str)
-            or Path(item).name != item
-            or not item.endswith(".txt")
-            for item in files
-        ):
-            raise ValueError("Invalid source manifest")
-
-        return set(files)
-
-    except (OSError, ValueError, TypeError, AttributeError):
-        raise HTTPException(
-            status_code=503,
-            detail="Approved sources are not configured",
-        ) from None
-
-
-def _require_expert(
-    identity: tuple[dict, str],
-    name: str,
-    module: str,
-) -> None:
+def _require_expert(identity, name: str, module: str):
     user, surface = identity
 
     try:
@@ -122,81 +58,50 @@ def _require_expert(
             module,
         )
     except AccessDenied:
-        raise HTTPException(
-            status_code=403,
-            detail="Expert or module is not licensed",
-        ) from None
+        _fail(403, "Expert or module is not licensed")
 
 
-def _document_questions(
-    name: str,
-    module: str,
-    approved: set[str],
-) -> list[dict]:
-    """Find questions supported by currently approved documents."""
-    candidates: list[dict] = []
-    seen: set[str] = set()
+def _knowledge(name: str, module: str):
+    try:
+        return (
+            get_published(name),
+            approved_sources(name, module),
+        )
+    except KnowledgeUnavailable:
+        logging.exception(
+            "Published %s knowledge is unavailable",
+            name,
+        )
+        _fail(503, "Document knowledge is currently unavailable")
 
-    documents = load_documents(KNOWLEDGE_DIR / name)
 
-    for doc in documents:
-        if (
-            doc["module"] != module
-            or doc["source"] not in approved
+def _confirm_current(
+    name,
+    module,
+    identity,
+    version,
+    sources,
+):
+    # Permissions or documents may change while an answer is generated.
+    _require_expert(identity, name, module)
+
+    try:
+        if not set(sources).issubset(
+            approved_sources(name, module)
         ):
-            continue
+            _fail(
+                403,
+                "Reference access changed; please ask again",
+            )
 
-        source = doc["source"]
-        body = doc["text"]
+        if published_version(name) != version:
+            _fail(
+                409,
+                "Reference material changed; please ask again",
+            )
 
-        def add(question: str) -> None:
-            question = " ".join(question.split())
-            key = question.casefold()
-
-            if (
-                12 <= len(question) <= 180
-                and key not in seen
-            ):
-                seen.add(key)
-
-                candidates.append({
-                    "question": question,
-                    "source": source,
-                    "kind": "document",
-                })
-
-        # Include a document FAQ only when it has an adjacent answer.
-        for match in FAQ.finditer(body):
-            if match.group(2).strip():
-                add(match.group(1).strip())
-
-        # Inventory incidents also contain documented resolution steps.
-        # Derive an action question from each current incident heading.
-        if name == "support" and module == "inventory":
-            incidents = list(INCIDENT.finditer(body))
-
-            for index, match in enumerate(incidents):
-                end = (
-                    incidents[index + 1].start()
-                    if index + 1 < len(incidents)
-                    else len(body)
-                )
-
-                section = body[match.end():end]
-
-                if "Resolution Steps:" in section:
-                    heading = (
-                        match.group(1)
-                        .strip()
-                        .rstrip(".?")
-                    )
-
-                    add(
-                        "How should I resolve "
-                        f"{heading.lower()}?"
-                    )
-
-    return candidates
+    except KnowledgeUnavailable:
+        _fail(503, "Document knowledge is currently unavailable")
 
 
 @router.get("/suggestions")
@@ -206,108 +111,100 @@ def expert_suggestions(
         "support_expert",
         "implementation_expert",
     ],
-    module: Literal[
-        "financial",
-        "inventory",
-        "payroll",
-    ],
-    identity: tuple[dict, str] = Depends(
-        require_demo_identity
-    ),
+    module: Literal["financial", "inventory", "payroll"],
+    identity=Depends(require_demo_identity),
 ):
-    """Return up to six questions for this verified user."""
     response.headers["Cache-Control"] = "no-store"
 
     name = expert.removesuffix("_expert")
-
     _require_expert(identity, name, module)
 
-    approved = _approved_sources(name, module)
+    knowledge, approved = _knowledge(name, module)
 
-    candidates = _document_questions(
-        name,
-        module,
-        approved,
+    candidates = [
+        {
+            "question": item["question"],
+            "source": item["source"],
+            "kind": item["kind"],
+        }
+        for item in knowledge.suggestions
+        if (
+            item["module"] == module
+            and item["source"] in approved
+        )
+    ]
+
+    selected = secrets.SystemRandom().sample(
+        candidates,
+        min(6, len(candidates)),
     )
 
-    count = min(6, len(candidates))
+    _confirm_current(
+        name,
+        module,
+        identity,
+        knowledge.version,
+        [item["source"] for item in selected],
+    )
 
     return {
-        "suggestions": secrets.SystemRandom().sample(
-            candidates,
-            count,
-        ),
+        "suggestions": selected,
         "available": len(candidates),
+        "knowledge_version": knowledge.version,
     }
 
 
 def _answer(
     name: str,
     request: ExpertQuestion,
-    identity: tuple[dict, str],
+    identity,
 ) -> dict:
-    _require_expert(
-        identity,
-        name,
-        request.module,
-    )
+    _require_expert(identity, name, request.module)
 
-    approved = _approved_sources(
-        name,
-        request.module,
-    )
+    question = request.question.strip()
+
+    if len(question) < 3:
+        _fail(400, "Enter a longer question")
+
+    knowledge, approved = _knowledge(name, request.module)
 
     if (
         request.source is not None
         and request.source not in approved
     ):
-        raise HTTPException(
-            status_code=403,
-            detail="Reference source is not approved",
-        )
+        _fail(403, "Reference source is not approved")
 
-    question = request.question.strip()
-
-    if len(question) < 3:
-        raise HTTPException(
-            status_code=400,
-            detail="Enter a longer question",
+    # Restrict the documents before ranking or sending context to AI.
+    allowed = [
+        chunk
+        for chunk in knowledge.chunks
+        if (
+            chunk["module"] == request.module
+            and chunk["source"] in approved
+            and (
+                request.source is None
+                or chunk["source"] == request.source
+            )
         )
+    ]
+
+    if not allowed:
+        return {
+            "reply": "No approved reference material for this module.",
+            "sources": [],
+            "knowledge_version": knowledge.version,
+        }
 
     api_key = os.environ.get("GROQ_API_KEY")
 
     if not api_key:
-        raise HTTPException(
-            status_code=503,
-            detail="AI service is not configured",
-        )
+        _fail(503, "AI service is not configured")
 
     try:
-        kb = _knowledge_base(name)
-
-        # Both the module and the source must be approved before
-        # any document text is sent to the AI provider.
-        allowed = [
-            chunk
-            for chunk in kb.chunks
-            if chunk.get("module") == request.module
-            and chunk.get("source") in approved
-            and (
-                request.source is None
-                or chunk.get("source") == request.source
-            )
-        ]
-
-        if not allowed:
-            return {
-                "reply": (
-                    "No approved reference material "
-                    "for this module."
-                ),
-                "sources": [],
-            }
-
         vector = embed_texts([question])[0]
+
+        if not _valid_vector(vector):
+            raise ValueError("Invalid question vector")
 
         ranked = sorted(
             allowed,
@@ -318,16 +215,20 @@ def _answer(
             reverse=True,
         )[:5]
 
-        if cosine_similarity(
-            vector,
-            ranked[0]["embedding"],
-        ) < MIN_SCORE:
+        if (
+            cosine_similarity(
+                vector,
+                ranked[0]["embedding"],
+            )
+            < MIN_SCORE
+        ):
             return {
                 "reply": (
                     "I could not find this in the "
                     "approved reference material."
                 ),
                 "sources": [],
+                "knowledge_version": knowledge.version,
             }
 
         prompt = build_answer_prompt(
@@ -349,52 +250,47 @@ def _answer(
             ],
         )
 
-        return {
-            "reply": (
-                result.choices[0].message.content
-                or ""
-            ),
-            "sources": sorted({
-                chunk["source"]
-                for chunk in ranked
-            }),
-        }
+        reply = result.choices[0].message.content or ""
 
     except Exception:
-        logging.exception(
-            "Demo %s expert failed",
-            name,
-        )
+        logging.exception("Demo %s expert failed", name)
+        _fail(502, "Expert service is unavailable")
 
-        raise HTTPException(
-            status_code=502,
-            detail="Expert service is unavailable",
-        ) from None
+    sources = sorted({
+        chunk["source"]
+        for chunk in ranked
+    })
+
+    _confirm_current(
+        name,
+        request.module,
+        identity,
+        knowledge.version,
+        sources,
+    )
+
+    return {
+        "reply": reply,
+        "sources": sources,
+        "knowledge_version": knowledge.version,
+    }
 
 
 @router.post("/implementation")
 def implementation_expert(
     request: ExpertQuestion,
-    identity: tuple[dict, str] = Depends(
-        require_demo_identity
-    ),
+    response: Response,
+    identity=Depends(require_demo_identity),
 ):
-    return _answer(
-        "implementation",
-        request,
-        identity,
-    )
+    response.headers["Cache-Control"] = "no-store"
+    return _answer("implementation", request, identity)
 
 
 @router.post("/support")
 def support_expert(
     request: ExpertQuestion,
-    identity: tuple[dict, str] = Depends(
-        require_demo_identity
-    ),
+    response: Response,
+    identity=Depends(require_demo_identity),
 ):
-    return _answer(
-        "support",
-        request,
-        identity,
-    )
+    response.headers["Cache-Control"] = "no-store"
+    return _answer("support", request, identity)
