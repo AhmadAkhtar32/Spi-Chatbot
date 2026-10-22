@@ -1,21 +1,32 @@
-"""
-Document search for the Implementation and Support experts.
-Documents are split into chunks, embedded locally, and searched by similarity.
+"""Document retrieval with incremental, persistent embedding caches.
+
+This module prepares TXT documents. It does not cache business records
+or generated answers. Publishing and answer caching are separate steps.
 """
 
 import hashlib
 import json
+import logging
 import math
 import os
 import re
 import tempfile
+import threading
 from pathlib import Path
 
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_DIMENSIONS = 384
+CHUNK_SIZE = 180
+CHUNK_OVERLAP = 30
+SCHEMA_VERSION = "v4-per-document-module"
+
 _embedder = None
+_embedder_lock = threading.Lock()
+_build_lock = threading.RLock()
+logger = logging.getLogger(__name__)
 
 
 def _writable_cache_root() -> Path:
-    """Use persistent local storage when writable, otherwise runtime temp storage."""
     configured = os.environ.get("SPIA_CACHE_DIR")
     preferred = (
         Path(configured).expanduser()
@@ -24,23 +35,19 @@ def _writable_cache_root() -> Path:
     )
     try:
         preferred.mkdir(parents=True, exist_ok=True)
-        # An existing directory might still be read-only.
         with tempfile.TemporaryFile(dir=preferred):
             pass
         return preferred
     except OSError:
         fallback = Path(tempfile.gettempdir()) / "spia_ai_assistant"
         fallback.mkdir(parents=True, exist_ok=True)
+        logger.warning("Using temporary document cache: %s", fallback)
         return fallback
 
 
 _CACHE_ROOT = _writable_cache_root()
-
-# Hugging Face reads these settings when its library is imported.
 os.environ.setdefault("HF_HOME", str(_CACHE_ROOT / "huggingface"))
 os.environ.setdefault("XDG_CACHE_HOME", str(_CACHE_ROOT / "xdg"))
-
-SCHEMA_VERSION = "v3-per-block-module"
 
 MIXED_CONTENT_FILES = {
     "incident_log_examples.txt": "incident_number",
@@ -49,29 +56,26 @@ MIXED_CONTENT_FILES = {
 
 
 def _get_embedder():
-    """Load the local embedding model once per running server instance."""
     global _embedder
     if _embedder is None:
-        from fastembed import TextEmbedding
+        with _embedder_lock:
+            if _embedder is None:
+                from fastembed import TextEmbedding
 
-        model_cache = _CACHE_ROOT / "models"
-        model_cache.mkdir(parents=True, exist_ok=True)
-        _embedder = TextEmbedding(
-            model_name="sentence-transformers/all-MiniLM-L6-v2",
-            cache_dir=str(model_cache),
-        )
+                model_cache = _CACHE_ROOT / "models"
+                model_cache.mkdir(parents=True, exist_ok=True)
+                _embedder = TextEmbedding(
+                    model_name=EMBEDDING_MODEL,
+                    cache_dir=str(model_cache),
+                )
     return _embedder
 
 
 def embed_texts(texts: list[str]) -> list[list[float]]:
-    """Turn text into vectors using the local model."""
-    embedder = _get_embedder()
-    vectors = list(embedder.embed(texts))
-    return [vector.tolist() for vector in vectors]
+    return [vector.tolist() for vector in _get_embedder().embed(texts)]
 
 
 def infer_module(source: str) -> str:
-    """Determine the module for a document from its filename."""
     name = source.lower()
     if name.startswith("gl_"):
         return "financial"
@@ -83,66 +87,52 @@ def infer_module(source: str) -> str:
 
 
 def _blocks_for_mixed_file(filename: str, full_text: str) -> list[str]:
-    """Split a file containing incidents from different modules."""
-    split_kind = MIXED_CONTENT_FILES[filename]
-    if split_kind == "incident_number":
-        pattern = re.compile(r"(?=^Incident #\d+)", re.MULTILINE)
-    else:
-        pattern = re.compile(r"(?=^INCIDENT TYPE:)", re.MULTILINE)
-    return [block for block in pattern.split(full_text) if block.strip()]
+    pattern = (
+        r"(?=^Incident #\d+)"
+        if MIXED_CONTENT_FILES[filename] == "incident_number"
+        else r"(?=^INCIDENT TYPE:)"
+    )
+    return [
+        block for block in re.split(pattern, full_text, flags=re.MULTILINE)
+        if block.strip()
+    ]
 
 
 def _module_for_block(block: str) -> str:
-    """Read an incident's module from its category or heading."""
     lowered = block.lower()
-    category_match = re.search(r"category:\s*(.+)", lowered)
-    signal_text = (
-        category_match.group(1)
-        if category_match
-        else lowered.split("\n", 1)[0]
-    )
-    if "payroll" in signal_text:
+    category = re.search(r"category:\s*(.+)", lowered)
+    signal = category.group(1) if category else lowered.split("\n", 1)[0]
+    if "payroll" in signal:
         return "payroll"
-    if "inventory" in signal_text:
+    if "inventory" in signal:
         return "inventory"
     return "general"
 
 
+def _documents_from_text(source: str, text: str) -> list[dict]:
+    if source in MIXED_CONTENT_FILES:
+        return [
+            {"source": source, "text": block, "module": _module_for_block(block)}
+            for block in _blocks_for_mixed_file(source, text)
+        ]
+    return [{"source": source, "text": text, "module": infer_module(source)}]
+
+
 def load_documents(folder: Path) -> list[dict]:
-    """Read the text documents and attach their module labels."""
-    docs = []
-    if not folder.exists():
-        return docs
-
-    for path in sorted(folder.glob("*.txt")):
-        full_text = path.read_text(encoding="utf-8")
-
-        if path.name in MIXED_CONTENT_FILES:
-            for block in _blocks_for_mixed_file(path.name, full_text):
-                docs.append({
-                    "source": path.name,
-                    "text": block,
-                    "module": _module_for_block(block),
-                })
-        else:
-            docs.append({
-                "source": path.name,
-                "text": full_text,
-                "module": infer_module(path.name),
-            })
-    return docs
+    documents = []
+    for path in sorted(Path(folder).glob("*.txt")):
+        documents.extend(
+            _documents_from_text(path.name, path.read_text(encoding="utf-8"))
+        )
+    return documents
 
 
 def chunk_text(
-    text: str,
-    chunk_size: int = 180,
-    overlap: int = 30,
+    text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP
 ) -> list[str]:
-    """Split a document into overlapping word groups."""
+    if chunk_size <= 0 or not 0 <= overlap < chunk_size:
+        raise ValueError("Require chunk_size > 0 and 0 <= overlap < chunk_size")
     words = text.split()
-    if not words:
-        return []
-
     chunks = []
     start = 0
     while start < len(words):
@@ -155,114 +145,188 @@ def chunk_text(
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
-    """Measure how close two vectors are."""
+    if len(a) != len(b):
+        raise ValueError("Embedding dimensions do not match")
     dot = sum(x * y for x, y in zip(a, b))
     norm_a = math.sqrt(sum(x * x for x in a))
     norm_b = math.sqrt(sum(x * x for x in b))
-    if norm_a == 0 or norm_b == 0:
-        return 0.0
-    return dot / (norm_a * norm_b)
+    return dot / (norm_a * norm_b) if norm_a and norm_b else 0.0
 
 
-def _folder_hash(folder: Path) -> str:
-    """Change the cache key when documents or the cache format change."""
-    digest = hashlib.sha256()
-    digest.update(SCHEMA_VERSION.encode())
-    for path in sorted(folder.glob("*.txt")):
-        digest.update(path.name.encode())
-        digest.update(path.read_bytes())
-    return digest.hexdigest()
+def _cache_settings() -> dict:
+    return {
+        "schema": SCHEMA_VERSION,
+        "model": EMBEDDING_MODEL,
+        "dimensions": EMBEDDING_DIMENSIONS,
+        "chunk_size": CHUNK_SIZE,
+        "overlap": CHUNK_OVERLAP,
+    }
+
+
+def _valid_vector(vector) -> bool:
+    return (
+        isinstance(vector, list)
+        and len(vector) == EMBEDDING_DIMENSIONS
+        and all(
+            type(value) in (int, float) and math.isfinite(value)
+            for value in vector
+        )
+        and any(value != 0 for value in vector)
+    )
+
+
+def _reusable(entry, digest: str, source: str, has_text: bool) -> bool:
+    if not isinstance(entry, dict) or entry.get("digest") != digest:
+        return False
+    chunks = entry.get("chunks")
+    if not isinstance(chunks, list) or bool(chunks) != has_text:
+        return False
+    return all(
+        isinstance(chunk, dict)
+        and chunk.get("source") == source
+        and isinstance(chunk.get("text"), str)
+        and bool(chunk["text"].strip())
+        and chunk.get("module") in {"financial", "inventory", "payroll", "general"}
+        and _valid_vector(chunk.get("embedding"))
+        for chunk in chunks
+    )
+
+
+def _read_cache(path: Path, settings: dict) -> dict:
+    try:
+        cached = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if (
+        not isinstance(cached, dict)
+        or cached.get("settings") != settings
+        or not isinstance(cached.get("documents"), dict)
+    ):
+        return {}
+    return cached
+
+
+def _write_cache(path: Path, data: dict) -> None:
+    """Replace a complete file; never leave a partially written JSON cache."""
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=path.parent,
+            prefix=path.name + ".", suffix=".tmp", delete=False,
+        ) as handle:
+            temporary = Path(handle.name)
+            json.dump(data, handle, ensure_ascii=False, allow_nan=False)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 class KnowledgeBase:
-    """A searchable collection of document chunks."""
+    """Prepare current TXT contents, reusing each unchanged document's vectors."""
 
     def __init__(self, folder: Path):
         self.chunks: list[dict] = []
-        self._build(folder)
+        self.version = ""
+        self.build_stats: dict = {}
+        with _build_lock:
+            self._build(Path(folder))
 
     def _cache_path(self, folder: Path) -> Path:
-        safe_name = folder.name.replace("/", "_")
-        folder_id = hashlib.sha256(
-            str(folder.resolve()).encode()
-        ).hexdigest()[:12]
-        return _CACHE_ROOT / f"{safe_name}-{folder_id}.json"
+        folder_id = hashlib.sha256(str(folder.resolve()).encode()).hexdigest()[:12]
+        return _CACHE_ROOT / f"{folder.name}-{folder_id}.json"
 
     def _build(self, folder: Path):
-        current_hash = _folder_hash(folder)
+        settings = _cache_settings()
         cache_file = self._cache_path(folder)
+        cached = _read_cache(cache_file, settings)
+        previous = cached.get("documents", {})
+        documents = {}
+        pending = []
+        reused = 0
+        rebuilt = 0
 
-        if cache_file.exists():
+        for path in sorted(folder.glob("*.txt")):
+            raw = path.read_bytes()
+            text = raw.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
+            digest = hashlib.sha256(raw).hexdigest()
+            entry = previous.get(path.name)
+            if _reusable(entry, digest, path.name, bool(text.strip())):
+                documents[path.name] = entry
+                reused += 1
+                continue
+
+            chunks = []
+            for document in _documents_from_text(path.name, text):
+                for section in chunk_text(document["text"], CHUNK_SIZE, CHUNK_OVERLAP):
+                    chunks.append({
+                        "text": section,
+                        "source": path.name,
+                        "module": document["module"],
+                    })
+            documents[path.name] = {"digest": digest, "chunks": chunks}
+            pending.extend(chunks)
+            rebuilt += 1
+
+        if pending:
+            vectors = embed_texts([chunk["text"] for chunk in pending])
+            if len(vectors) != len(pending) or not all(map(_valid_vector, vectors)):
+                raise ValueError("Embedding model returned invalid vectors")
+            for chunk, vector in zip(pending, vectors):
+                chunk["embedding"] = vector
+
+        removed = len(set(previous) - set(documents))
+        signature = {
+            "settings": settings,
+            "documents": {name: value["digest"] for name, value in documents.items()},
+        }
+        self.version = hashlib.sha256(
+            json.dumps(signature, sort_keys=True).encode("utf-8")
+        ).hexdigest()
+        self.chunks = [
+            chunk for document in documents.values() for chunk in document["chunks"]
+        ]
+
+        saved = True
+        if not cached or rebuilt or removed or cached.get("version") != self.version:
             try:
-                cached = json.loads(cache_file.read_text(encoding="utf-8"))
-                if cached.get("hash") == current_hash:
-                    self.chunks = cached["chunks"]
-                    return
-            except (json.JSONDecodeError, KeyError):
-                pass
-
-        docs = load_documents(folder)
-        all_chunks = []
-        for doc in docs:
-            for chunk in chunk_text(doc["text"]):
-                all_chunks.append({
-                    "text": chunk,
-                    "source": doc["source"],
-                    "module": doc["module"],
+                _write_cache(cache_file, {
+                    "settings": settings,
+                    "version": self.version,
+                    "documents": documents,
                 })
+            except OSError:
+                saved = False
+                logger.warning("Document cache could not be saved: %s", cache_file)
 
-        if not all_chunks:
-            self.chunks = []
-            return
-
-        vectors = embed_texts([chunk["text"] for chunk in all_chunks])
-        for chunk, vector in zip(all_chunks, vectors):
-            chunk["embedding"] = vector
-
-        self.chunks = all_chunks
-        try:
-            cache_file.write_text(
-                json.dumps({"hash": current_hash, "chunks": all_chunks}),
-                encoding="utf-8",
-            )
-        except OSError:
-            # Search still works if a temporary cache cannot be saved.
-            pass
+        self.build_stats = {
+            "reused_documents": reused,
+            "rebuilt_documents": rebuilt,
+            "removed_documents": removed,
+            "embedded_chunks": len(pending),
+            "total_chunks": len(self.chunks),
+            "cache_saved": saved,
+        }
 
     def search(self, query: str, top_k: int = 5) -> list[dict]:
-        """Find the document chunks most relevant to a question."""
-        if not self.chunks:
+        if not self.chunks or top_k <= 0:
             return []
-
-        query_vector = embed_texts([query])[0]
-        scored = [
-            (cosine_similarity(query_vector, chunk["embedding"]), chunk)
-            for chunk in self.chunks
-        ]
-        scored.sort(key=lambda pair: pair[0], reverse=True)
-
-        results = []
-        for score, chunk in scored[:top_k]:
-            enriched = dict(chunk)
-            enriched["score"] = score
-            results.append(enriched)
-        return results
-
-
-def build_answer_prompt(
-    expert_name: str,
-    question: str,
-    chunks: list[dict],
-) -> str:
-    """Give the AI the relevant document text and the user's question."""
-    if not chunks:
-        context_block = "(No relevant reference material was found.)"
-    else:
-        context_block = "\n\n".join(
-            f"[Source: {chunk['source']}]\n{chunk['text']}"
-            for chunk in chunks
+        vector = embed_texts([query])[0]
+        if not _valid_vector(vector):
+            raise ValueError("Embedding model returned an invalid question vector")
+        scored = sorted(
+            ((cosine_similarity(vector, chunk["embedding"]), chunk) for chunk in self.chunks),
+            key=lambda pair: pair[0], reverse=True,
         )
+        return [dict(chunk, score=score) for score, chunk in scored[:top_k]]
 
+
+def build_answer_prompt(expert_name: str, question: str, chunks: list[dict]) -> str:
+    context = "\n\n".join(
+        f"[Source: {chunk['source']}]\n{chunk['text']}" for chunk in chunks
+    ) or "(No relevant reference material was found.)"
     return f"""You are the {expert_name} for SPI, D-Biz Solutions' ERP system.
 
 Answer the question using ONLY the reference material below. If the
@@ -272,7 +336,7 @@ information came from.
 
 Reference material:
 ---
-{context_block}
+{context}
 ---
 
 Question: {question}

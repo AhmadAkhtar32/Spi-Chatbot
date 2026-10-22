@@ -398,7 +398,7 @@ export default function AppShell({ demoMode = false }) {
                       HR · Payroll
                     </option>
                     <option value="demo_bi">
-                      Internal BI · Source data preview
+                      Internal BI · Analytics
                     </option>
                     <option value="demo_document_clerk">
                       Document clerk · Source data preview

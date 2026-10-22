@@ -17,6 +17,12 @@ import MessageInput from '../components/MessageInput.jsx'
 import SuggestionChip from '../components/SuggestionChip.jsx'
 import TypingIndicator from '../components/TypingIndicator.jsx'
 import { API_BASE } from '../api.js'
+import {
+  planBusinessQuestion,
+  pagePath,
+  isRecordPath,
+  businessAnswer,
+} from '../businessQuestions.js'
 
 const KINDS = {
   stock: { label: 'Inventory', icon: Package },
@@ -27,131 +33,11 @@ const KINDS = {
   tickets: { label: 'Support', icon: LifeBuoy },
 }
 
-const TARGET =
-  /^\/api\/demo\/business\/(?:stock\/[A-Za-z0-9-]{1,64}\/[A-Za-z0-9-]{1,64}|(?:sales-orders|purchase-orders|credit-return-notes|payroll|tickets)\/[A-Za-z0-9-]{1,64})$/
-
 function greeting() {
   const hour = new Date().getHours()
-
   if (hour < 12) return 'Good morning'
   if (hour < 17) return 'Good afternoon'
-
   return 'Good evening'
-}
-
-function targetFromText(text) {
-  const upper = text.toUpperCase()
-  const sku = upper.match(/\bSKU-[0-9]+\b/g) || []
-  const warehouse =
-    upper.match(/\bWH-[A-Z0-9-]+\b/g) || []
-  const ids =
-    upper.match(
-      /\b(?:SO|PO|CRN|PAY|TCK)-[A-Z0-9-]+\b/g
-    ) || []
-
-  if (
-    sku.length === 1 &&
-    warehouse.length === 1 &&
-    ids.length === 0
-  ) {
-    return (
-      `/api/demo/business/stock/` +
-      `${sku[0]}/${warehouse[0]}`
-    )
-  }
-
-  if (
-    ids.length !== 1 ||
-    sku.length ||
-    warehouse.length
-  ) {
-    return null
-  }
-
-  const id = ids[0]
-
-  const segment = {
-    SO: 'sales-orders',
-    PO: 'purchase-orders',
-    CRN: 'credit-return-notes',
-    PAY: 'payroll',
-    TCK: 'tickets',
-  }[id.split('-')[0]]
-
-  return segment
-    ? `/api/demo/business/${segment}/${id}`
-    : null
-}
-
-function answerFromRecord(result) {
-  const record = result.record
-  const details = result.details || {}
-  let answer
-
-  switch (result.kind) {
-    case 'stock':
-      answer =
-        `${details.item_name || record.item_id} ` +
-        `(${record.item_id}) in ` +
-        `${details.warehouse_name || record.warehouse_id}: ` +
-        `**${record.quantity_available} ` +
-        `${details.unit || 'units'} available**.`
-      break
-
-    case 'sales_orders':
-      answer =
-        `Sales order **${record.id}** is ` +
-        `**${record.status}**. Customer: ` +
-        `${details.party_name || record.customer_party_id} ` +
-        `(${record.customer_party_id}). Total: PKR ` +
-        `${record.total_amount_pkr.toLocaleString()}.`
-      break
-
-    case 'purchase_orders':
-      answer =
-        `Purchase order **${record.id}** is ` +
-        `**${record.status}**. Supplier: ` +
-        `${details.party_name || record.supplier_party_id} ` +
-        `(${record.supplier_party_id}). Total: PKR ` +
-        `${record.total_amount_pkr.toLocaleString()}.`
-      break
-
-    case 'credit_return_notes':
-      answer =
-        `Credit return note **${record.id}** is ` +
-        `**${record.status}** for sales order ` +
-        `${record.sales_order_id}. Customer: ` +
-        `${details.party_name || record.customer_party_id}. ` +
-        `Credit: PKR ` +
-        `${record.credit_amount_pkr.toLocaleString()}.`
-      break
-
-    case 'payroll':
-      answer =
-        `Payroll **${record.id}** for ` +
-        `${record.employee_id}, period ` +
-        `${record.period}: **${record.status}**. ` +
-        `Net pay: PKR ${record.net.toLocaleString()}.`
-      break
-
-    case 'tickets':
-      answer =
-        `Support ticket **${record.id}** is ` +
-        `**${record.status}**. Module: ` +
-        `${record.module}. Subject: ${record.subject}.`
-      break
-
-    default:
-      return (
-        'The returned record type is not supported ' +
-        'by this demo screen.'
-      )
-  }
-
-  return (
-    `${answer}\n\n` +
-    `Fictional demo snapshot: ${result.snapshot_at}.`
-  )
 }
 
 export default function DemoBusinessPage() {
@@ -165,16 +51,36 @@ export default function DemoBusinessPage() {
 
   const [input, setInput] = useState('')
   const [suggestions, setSuggestions] = useState([])
-  const [suggestionsBusy, setSuggestionsBusy] =
-    useState(false)
-  const [suggestionsError, setSuggestionsError] =
-    useState('')
+  const [suggestionsBusy, setSuggestionsBusy] = useState(false)
+  const [suggestionsError, setSuggestionsError] = useState('')
   const [refresh, setRefresh] = useState(0)
   const [busy, setBusy] = useState(false)
 
   const scrollRef = useRef(null)
-  const tokenRef = useRef(demoSession?.token)
-  tokenRef.current = demoSession?.token
+  const contextRef = useRef(null)
+  const requestRef = useRef(null)
+  const lockRef = useRef(false)
+  const pageRef = useRef(null)
+
+  const contextKey = (
+    `${demoSession?.token || ''}:${conversationId || ''}`
+  )
+  contextRef.current = contextKey
+
+  useEffect(() => {
+    requestRef.current?.abort()
+    requestRef.current = null
+    lockRef.current = false
+    pageRef.current = null
+    setBusy(false)
+    setInput('')
+
+    return () => {
+      requestRef.current?.abort()
+      requestRef.current = null
+      lockRef.current = false
+    }
+  }, [contextKey])
 
   useEffect(() => {
     if (!demoSession?.token) return
@@ -185,17 +91,13 @@ export default function DemoBusinessPage() {
     setSuggestionsBusy(true)
     setSuggestionsError('')
 
-    fetch(
-      `${API_BASE}/api/demo/business/suggestions`,
-      {
-        headers: {
-          Authorization:
-            `Bearer ${demoSession.token}`,
-        },
-        cache: 'no-store',
-        signal: controller.signal,
-      }
-    )
+    fetch(`${API_BASE}/api/demo/business/suggestions`, {
+      headers: {
+        Authorization: `Bearer ${demoSession.token}`,
+      },
+      cache: 'no-store',
+      signal: controller.signal,
+    })
       .then(async (response) => {
         if (response.status === 401) {
           switchDemoUser(
@@ -220,8 +122,7 @@ export default function DemoBusinessPage() {
       .catch((error) => {
         if (!controller.signal.aborted) {
           setSuggestionsError(
-            error.message ||
-              'Could not load questions.'
+            error.message || 'Could not load questions.'
           )
         }
       })
@@ -241,25 +142,44 @@ export default function DemoBusinessPage() {
     })
   }, [messages, busy])
 
-  async function send(
-    question,
-    suggestedTarget = null
-  ) {
+  function clearChat() {
+    requestRef.current?.abort()
+    requestRef.current = null
+    lockRef.current = false
+    pageRef.current = null
+    setBusy(false)
+    setMessages([])
+    setInput('')
+  }
+
+  async function send(question, suggestedTarget = null) {
     const text = question?.trim()
 
     if (
-      !text ||
-      busy ||
-      !demoSession?.token
+      !text
+      || lockRef.current
+      || !demoSession?.token
     ) {
       return
     }
 
-    const path =
-      suggestedTarget || targetFromText(text)
-    const token = demoSession.token
+    let plan = suggestedTarget
+      ? (
+        isRecordPath(suggestedTarget)
+          ? { path: suggestedTarget }
+          : {
+            clarification:
+              'This suggested record link is invalid. Refresh the questions.',
+          }
+      )
+      : planBusinessQuestion(text)
+
+    if (plan.page) {
+      plan = pagePath(pageRef.current, plan.page)
+    }
 
     setInput('')
+
     setMessages((previous) => [
       ...previous,
       {
@@ -269,33 +189,48 @@ export default function DemoBusinessPage() {
       },
     ])
 
-    if (!path || !TARGET.test(path)) {
+    if (plan.clarification) {
       setMessages((previous) => [
         ...previous,
         {
           role: 'assistant',
-          content:
-            'Enter a single record ID such as SO-1001, PO-2001, PAY-2026-09-1001, TCK-3001, or both SKU-100 and WH-LHR for stock. This demo searches approved records; it does not interpret open-ended business questions yet.',
+          content: plan.clarification,
           timestamp: Date.now(),
         },
       ])
       return
     }
 
+    const key = contextKey
+    const controller = new AbortController()
+
+    requestRef.current = controller
+    lockRef.current = true
     setBusy(true)
+
+    const timer = setTimeout(
+      () => controller.abort(),
+      30000
+    )
 
     try {
       const response = await fetch(
-        `${API_BASE}${path}`,
+        `${API_BASE}${plan.path}`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${demoSession.token}`,
           },
           cache: 'no-store',
+          signal: controller.signal,
         }
       )
 
-      if (tokenRef.current !== token) return
+      if (
+        controller.signal.aborted
+        || contextRef.current !== key
+      ) {
+        return
+      }
 
       if (response.status === 401) {
         switchDemoUser(
@@ -306,49 +241,84 @@ export default function DemoBusinessPage() {
 
       if (response.status === 403) {
         throw new Error(
-          'This data area is not licensed for this user.'
+          'This business area is not available to your role or license.'
         )
       }
 
       if (response.status === 404) {
         throw new Error(
-          'Record not found or unavailable to this user.'
+          'Record not found or unavailable within your permitted access.'
+        )
+      }
+
+      if (response.status === 422) {
+        throw new Error(
+          'Check the filters. Use YYYY-MM-DD for dates and YYYY-MM for payroll periods; the start date must not follow the end date.'
         )
       }
 
       if (!response.ok) {
         throw new Error(
-          `Could not check the record (${response.status}).`
+          `The business service could not complete the request (${response.status}).`
         )
       }
 
       const result = await response.json()
 
-      if (tokenRef.current !== token) return
+      if (
+        controller.signal.aborted
+        || contextRef.current !== key
+      ) {
+        return
+      }
+
+      if (plan.kind && result.kind !== plan.kind) {
+        throw new Error('Unexpected business response.')
+      }
+
+      const answer = businessAnswer(result)
+
+      pageRef.current = Array.isArray(result.items)
+        ? { path: plan.path, result }
+        : null
 
       setMessages((previous) => [
         ...previous,
         {
           role: 'assistant',
-          content: answerFromRecord(result),
+          content: answer,
           timestamp: Date.now(),
         },
       ])
     } catch (error) {
-      if (tokenRef.current !== token) return
+      if (
+        contextRef.current !== key
+        || requestRef.current !== controller
+      ) {
+        return
+      }
 
       setMessages((previous) => [
         ...previous,
         {
           role: 'assistant',
-          content:
-            error.message ||
-            'The business service is unavailable.',
+          content: error.name === 'AbortError'
+            ? 'The request timed out. Please try again.'
+            : (
+              error.message
+              || 'The business service is unavailable.'
+            ),
           timestamp: Date.now(),
         },
       ])
     } finally {
-      setBusy(false)
+      clearTimeout(timer)
+
+      if (requestRef.current === controller) {
+        requestRef.current = null
+        lockRef.current = false
+        setBusy(false)
+      }
     }
   }
 
@@ -371,7 +341,7 @@ export default function DemoBusinessPage() {
           </motion.h1>
 
           <p className="text-[13.5px] text-ink-secondary mb-7 text-center max-w-md leading-relaxed">
-            Look up records allowed for your demo role.
+            Ask about records allowed for your demo role.
             Results come from a fictional local snapshot.
           </p>
 
@@ -383,9 +353,7 @@ export default function DemoBusinessPage() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setRefresh((value) => value + 1)
-                }
+                onClick={() => setRefresh((value) => value + 1)}
                 className="inline-flex gap-1 items-center text-[11px] text-primary hover:underline"
               >
                 <RotateCw className="w-3 h-3" />
@@ -395,8 +363,7 @@ export default function DemoBusinessPage() {
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {suggestions.map((item) => {
-                const kind =
-                  KINDS[item.kind] || KINDS.stock
+                const kind = KINDS[item.kind] || KINDS.stock
 
                 return (
                   <SuggestionChip
@@ -405,9 +372,10 @@ export default function DemoBusinessPage() {
                     label={item.question}
                     description="Available in your demo scope"
                     category={kind.label}
-                    onClick={() =>
-                      send(item.question, item.target)
-                    }
+                    onClick={() => send(
+                      item.question,
+                      item.target
+                    )}
                   />
                 )
               })}
@@ -431,12 +399,13 @@ export default function DemoBusinessPage() {
               </p>
             )}
 
-            {!suggestionsBusy &&
-              !suggestionsError &&
-              suggestions.length < 6 && (
+            {!suggestionsBusy
+              && !suggestionsError
+              && suggestions.length < 6
+              && (
                 <p className="mt-4 text-center text-xs text-ink-secondary">
-                  {suggestions.length} accessible
-                  records available for suggestions.
+                  {suggestions.length} accessible records
+                  available for suggestions.
                 </p>
               )}
           </div>
@@ -467,12 +436,9 @@ export default function DemoBusinessPage() {
           disabled={busy}
           value={input}
           onValueChange={setInput}
-          onClear={() => {
-            setMessages([])
-            setInput('')
-          }}
+          onClear={clearChat}
           hasMessages={messages.length > 0}
-          inputPlaceholder="Enter an order, stock, payroll, return, or ticket ID…"
+          inputPlaceholder="Ask about stock, orders, payroll, tickets or credit returns…"
           voiceEnabled={false}
         />
       </div>

@@ -1,8 +1,11 @@
-fastapi
-uvicorn[standard]
-google-genai
-groq
-python-dotenv
-pydantic
-python-multipart
-fastembed
+# Project baseline: Python 3.12.8, Windows AMD64
+
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+pydantic==2.13.5
+fastembed==0.8.1
+onnxruntime==1.30.0
+groq==1.7.0
+google-genai==2.24.0
+python-dotenv==1.2.3
+python-multipart==0.0.32
