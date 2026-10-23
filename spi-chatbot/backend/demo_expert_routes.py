@@ -8,8 +8,10 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 
+import published_knowledge
 from demo_policy import AccessDenied, authorize_expert
 from demo_routes import require_demo_identity
+from document_answer_cache import document_answers, make_key
 from groq_utils import generate_with_retry
 from published_knowledge import (
     KnowledgeUnavailable,
@@ -31,6 +33,10 @@ router = APIRouter(
 )
 
 MIN_SCORE = 0.35
+CHAT_MODEL = "openai/gpt-oss-120b"
+
+# Change this revision when the document prompt or answer rules change.
+ANSWER_RULES_VERSION = "published-doc-answer-v1"
 
 
 class ExpertQuestion(BaseModel):
@@ -82,7 +88,6 @@ def _confirm_current(
     version,
     sources,
 ):
-    # Permissions or documents may change while an answer is generated.
     _require_expert(identity, name, module)
 
     try:
@@ -158,7 +163,10 @@ def _answer(
     name: str,
     request: ExpertQuestion,
     identity,
+    response: Response,
 ) -> dict:
+    response.headers["X-Document-Answer-Cache"] = "bypass"
+
     _require_expert(identity, name, request.module)
 
     question = request.question.strip()
@@ -174,7 +182,6 @@ def _answer(
     ):
         _fail(403, "Reference source is not approved")
 
-    # Restrict the documents before ranking or sending context to AI.
     allowed = [
         chunk
         for chunk in knowledge.chunks
@@ -199,6 +206,44 @@ def _answer(
 
     if not api_key:
         _fail(503, "AI service is not configured")
+
+    user, surface = identity
+
+    cache_key = make_key(
+        installation=str(
+            published_knowledge.KNOWLEDGE_DIR.resolve()
+        ),
+        user=user,
+        surface=surface,
+        expert=name,
+        module=request.module,
+        source=request.source,
+        question=question,
+        knowledge_version=knowledge.version,
+        approved=sorted(approved),
+        model=CHAT_MODEL,
+        rules=ANSWER_RULES_VERSION,
+        minimum_score=MIN_SCORE,
+        top_k=5,
+    )
+
+    cached = document_answers.get(cache_key)
+
+    if cached is not None:
+        _confirm_current(
+            name,
+            request.module,
+            identity,
+            knowledge.version,
+            cached["sources"],
+        )
+
+        response.headers["X-Document-Answer-Cache"] = "hit"
+
+        return {
+            **cached,
+            "knowledge_version": knowledge.version,
+        }
 
     try:
         vector = embed_texts([question])[0]
@@ -241,7 +286,7 @@ def _answer(
 
         result = generate_with_retry(
             Groq(api_key=api_key),
-            model="openai/gpt-oss-120b",
+            model=CHAT_MODEL,
             messages=[
                 {
                     "role": "user",
@@ -269,6 +314,10 @@ def _answer(
         sources,
     )
 
+    if getattr(result.choices[0], "finish_reason", None) == "stop":
+        if document_answers.put(cache_key, reply, sources):
+            response.headers["X-Document-Answer-Cache"] = "miss"
+
     return {
         "reply": reply,
         "sources": sources,
@@ -283,7 +332,12 @@ def implementation_expert(
     identity=Depends(require_demo_identity),
 ):
     response.headers["Cache-Control"] = "no-store"
-    return _answer("implementation", request, identity)
+    return _answer(
+        "implementation",
+        request,
+        identity,
+        response,
+    )
 
 
 @router.post("/support")
@@ -293,4 +347,9 @@ def support_expert(
     identity=Depends(require_demo_identity),
 ):
     response.headers["Cache-Control"] = "no-store"
-    return _answer("support", request, identity)
+    return _answer(
+        "support",
+        request,
+        identity,
+        response,
+    )
