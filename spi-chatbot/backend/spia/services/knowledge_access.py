@@ -1,226 +1,221 @@
-"""Classification checks for published knowledge."""
-import hashlib
-import json
-import os
-from collections import defaultdict
-from pathlib import Path
-from typing import Literal
-
-from pydantic import Field, ValidationError, model_validator
-from spia.core.paths import BACKEND_DIR
-from spia.security.access_control import (
-    AccessDenied, Fact, Key, Model, Module,
-    Resource, allowed_fields, require_feature,
-)
-from spia.security.store import (
-    SecurityConfigurationError, load_policy,
-)
-from spia.services.knowledge import (
-    approved_sources, get_published,
-)
-
-
-class SourceAccess(Model):
-    expert: Literal["implementation", "support"]
-    source: Key
-    content_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
-    modules: frozenset[Module] = Field(min_length=1)
-    status: Literal["pending_review", "approved", "blocked"]
-    classifications: frozenset[Key]
-    facts: tuple[Fact, ...] = ()
-
-    @model_validator(mode="after")
-    def safe_metadata(self):
-        if (
-            Path(self.source).name != self.source
-            or any(c in self.source for c in "/\\:")
-        ):
-            raise ValueError("Invalid source name")
-        attributes = [fact.attribute for fact in self.facts]
-        if (
-            len(attributes) != len(set(attributes))
-            or {"source", "expert"} & set(attributes)
-        ):
-            raise ValueError("Invalid source facts")
-        if self.status == "approved" and not self.classifications:
-            raise ValueError("Approved sources need classifications")
-        return self
-
-
-class Catalogue(Model):
-    schema_version: Literal[1]
-    company_id: Key
-    installation_id: Key
-    sources: tuple[SourceAccess, ...]
-
-    @model_validator(mode="after")
-    def unique_sources(self):
-        names = [(item.expert, item.source) for item in self.sources]
-        if len(names) != len(set(names)):
-            raise ValueError("Duplicate source")
-        return self
-
-
-def digest(value):
-    encoded = json.dumps(
-        value,
-        sort_keys=True,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        allow_nan=False,
-    ).encode("utf-8")
-    return hashlib.sha256(encoded).hexdigest()
-
-
-def rights(policy):
-    return policy.model_dump(
-        mode="json",
-        exclude={"valid_until"},
-    )
-
-
-def _unique(pairs):
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError("Duplicate catalogue key")
-        result[key] = value
-    return result
-
-
+"""Classification checks for published knowledge."""
+import hashlib
+import json
+import os
+from collections import defaultdict
+from pathlib import Path
+from typing import Literal
+
+from pydantic import Field, ValidationError, model_validator
+from spia.core.paths import BACKEND_DIR
+from spia.security.access_control import (
+    AccessDenied, Fact, Key, Model, Module,
+    Resource, allowed_fields, require_feature,
+)
+from spia.security.store import (
+    SecurityConfigurationError, load_policy,
+)
+from spia.services.knowledge import (
+    approved_sources, get_published,
+)
+
+
+class SourceAccess(Model):
+    expert: Literal["implementation", "support"]
+    source: Key
+    content_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    modules: frozenset[Module] = Field(min_length=1)
+    status: Literal["pending_review", "approved", "blocked"]
+    classifications: frozenset[Key]
+    facts: tuple[Fact, ...] = ()
+
+    @model_validator(mode="after")
+    def safe_metadata(self):
+        if (
+            Path(self.source).name != self.source
+            or any(c in self.source for c in "/\\:")
+        ):
+            raise ValueError("Invalid source name")
+        attributes = [fact.attribute for fact in self.facts]
+        if (
+            len(attributes) != len(set(attributes))
+            or {"source", "expert"} & set(attributes)
+        ):
+            raise ValueError("Invalid source facts")
+        if self.status == "approved" and not self.classifications:
+            raise ValueError("Approved sources need classifications")
+        return self
+
+
+class Catalogue(Model):
+    schema_version: Literal[1]
+    company_id: Key
+    installation_id: Key
+    sources: tuple[SourceAccess, ...]
+
+    @model_validator(mode="after")
+    def unique_sources(self):
+        names = [(item.expert, item.source) for item in self.sources]
+        if len(names) != len(set(names)):
+            raise ValueError("Duplicate source")
+        return self
+
+
+def digest(value):
+    encoded = json.dumps(
+        value,
+        sort_keys=True,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def rights(policy):
+    return policy.model_dump(
+        mode="json",
+        exclude={"valid_until"},
+    )
+
+
+def _unique(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate catalogue key")
+        result[key] = value
+    return result
+
+
 def read_catalogue():
-    path = Path(
-        os.environ.get("SPIA_KNOWLEDGE_ACCESS_FILE")
-        or BACKEND_DIR / "data/knowledge_access.json"
-    )
+    path = Path(os.environ.get('SPIA_KNOWLEDGE_ACCESS_FILE') or BACKEND_DIR / 'data/knowledge_access.json')
+    if not path.is_absolute():
+        path = BACKEND_DIR / path
     try:
-        with path.open("rb") as file:
+        with path.open('rb') as file:
             raw = file.read(1024 * 1024 + 1)
         if len(raw) > 1024 * 1024:
-            raise ValueError("Catalogue too large")
-        catalogue = Catalogue.model_validate(
-            json.loads(raw, object_pairs_hook=_unique)
-        )
-        return catalogue, hashlib.sha256(raw).hexdigest()
+            raise ValueError('Catalogue too large')
+        catalogue = Catalogue.model_validate(json.loads(raw, object_pairs_hook=_unique))
+        return (catalogue, hashlib.sha256(raw).hexdigest())
     except (OSError, ValueError, ValidationError) as exc:
-        raise SecurityConfigurationError(
-            "Knowledge access catalogue unavailable"
-        ) from exc
-
-
-class KnowledgeAccess:
-    def __init__(self, context, expert, module):
-        self.context = context
-        self.expert = expert
-        self.module = module
-        self.policy = load_policy(context.identity)
-        self.feature = expert + "_expert"
-
-        require_feature(
-            context.identity,
-            self.policy,
-            self.feature,
-            module,
-        )
-        if rights(self.policy) != rights(context.policy):
-            raise AccessDenied("ACCESS_CHANGED")
-
-        catalogue, self.catalogue_version = read_catalogue()
-        if (
-            catalogue.company_id,
-            catalogue.installation_id,
-        ) != (
-            context.identity.company_id,
-            context.identity.installation_id,
-        ):
-            raise AccessDenied("KNOWLEDGE_INSTALLATION_MISMATCH")
-
-        self.knowledge = get_published(expert)
-        self.approved = approved_sources(expert, module)
-
-        grouped = defaultdict(list)
-        for chunk in self.knowledge.chunks:
-            grouped[chunk["source"]].append({
-                "module": chunk["module"],
-                "text": chunk["text"],
-            })
-
-        self.sources = set()
-
-        for item in catalogue.sources:
-            if (
-                item.expert != expert
-                or item.status != "approved"
-                or item.source not in self.approved
-            ):
-                continue
-
-            sections = grouped.get(item.source, [])
-            if (
-                not sections
-                or module not in item.modules
-                or item.modules != {
-                    section["module"] for section in sections
-                }
-                or item.content_sha256 != digest(sections)
-            ):
-                continue
-
-            resource = Resource(
-                company_id=context.identity.company_id,
-                resource_type="knowledge",
-                module=module,
-                classifications=item.classifications,
-                facts=(
-                    {"attribute": "source", "value": item.source},
-                    {"attribute": "expert", "value": expert},
-                    *item.facts,
-                ),
-            )
-            try:
-                for action in ("read", "ask"):
-                    allowed_fields(
-                        context.identity,
-                        self.policy,
-                        self.feature,
-                        action,
-                        resource,
-                        requested_fields=frozenset({"text", "source"}),
-                    )
-            except AccessDenied as exc:
-                if exc.code in {
-                    "DATA_ACCESS_DENIED",
-                    "FIELD_ACCESS_DENIED",
-                }:
-                    continue
-                raise
-
-            self.sources.add(item.source)
-
-        if not self.sources:
-            raise AccessDenied("KNOWLEDGE_ACCESS_DENIED")
-
-        self.chunks = [
-            chunk
-            for chunk in self.knowledge.chunks
-            if (
-                chunk["module"] == module
-                and chunk["source"] in self.sources
-            )
-        ]
-
-    def confirm(self):
-        current = KnowledgeAccess(
-            self.context,
-            self.expert,
-            self.module,
-        )
-        if (
-            current.catalogue_version != self.catalogue_version
-            or current.knowledge.version != self.knowledge.version
-            or current.approved != self.approved
-            or current.sources != self.sources
-        ):
+        raise SecurityConfigurationError('Knowledge access catalogue unavailable') from exc
+
+
+class KnowledgeAccess:
+    def __init__(self, context, expert, module):
+        self.context = context
+        self.expert = expert
+        self.module = module
+        self.policy = load_policy(context.identity)
+        self.feature = expert + "_expert"
+
+        require_feature(
+            context.identity,
+            self.policy,
+            self.feature,
+            module,
+        )
+        if rights(self.policy) != rights(context.policy):
+            raise AccessDenied("ACCESS_CHANGED")
+
+        catalogue, self.catalogue_version = read_catalogue()
+        if (
+            catalogue.company_id,
+            catalogue.installation_id,
+        ) != (
+            context.identity.company_id,
+            context.identity.installation_id,
+        ):
+            raise AccessDenied("KNOWLEDGE_INSTALLATION_MISMATCH")
+
+        self.knowledge = get_published(expert)
+        self.approved = approved_sources(expert, module)
+
+        grouped = defaultdict(list)
+        for chunk in self.knowledge.chunks:
+            grouped[chunk["source"]].append({
+                "module": chunk["module"],
+                "text": chunk["text"],
+            })
+
+        self.sources = set()
+
+        for item in catalogue.sources:
+            if (
+                item.expert != expert
+                or item.status != "approved"
+                or item.source not in self.approved
+            ):
+                continue
+
+            sections = grouped.get(item.source, [])
+            if (
+                not sections
+                or module not in item.modules
+                or item.modules != {
+                    section["module"] for section in sections
+                }
+                or item.content_sha256 != digest(sections)
+            ):
+                continue
+
+            resource = Resource(
+                company_id=context.identity.company_id,
+                resource_type="knowledge",
+                module=module,
+                classifications=item.classifications,
+                facts=(
+                    {"attribute": "source", "value": item.source},
+                    {"attribute": "expert", "value": expert},
+                    *item.facts,
+                ),
+            )
+            try:
+                for action in ("read", "ask"):
+                    allowed_fields(
+                        context.identity,
+                        self.policy,
+                        self.feature,
+                        action,
+                        resource,
+                        requested_fields=frozenset({"text", "source"}),
+                    )
+            except AccessDenied as exc:
+                if exc.code in {
+                    "DATA_ACCESS_DENIED",
+                    "FIELD_ACCESS_DENIED",
+                }:
+                    continue
+                raise
+
+            self.sources.add(item.source)
+
+        if not self.sources:
+            raise AccessDenied("KNOWLEDGE_ACCESS_DENIED")
+
+        self.chunks = [
+            chunk
+            for chunk in self.knowledge.chunks
+            if (
+                chunk["module"] == module
+                and chunk["source"] in self.sources
+            )
+        ]
+
+    def confirm(self):
+        current = KnowledgeAccess(
+            self.context,
+            self.expert,
+            self.module,
+        )
+        if (
+            current.catalogue_version != self.catalogue_version
+            or current.knowledge.version != self.knowledge.version
+            or current.approved != self.approved
+            or current.sources != self.sources
+        ):
             raise AccessDenied("KNOWLEDGE_ACCESS_CHANGED")
 
 

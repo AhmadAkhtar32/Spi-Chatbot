@@ -63,18 +63,16 @@ def approved_sources(expert: str, module: str) -> set[str]:
 
 def _root() -> Path:
     configured = os.environ.get("SPIA_PUBLISHED_DIR")
-    if configured is not None:
-        if not configured.strip():
-            raise KnowledgeUnavailable("SPIA_PUBLISHED_DIR must not be empty")
-        destination = Path(configured.strip()).expanduser()
-        if not destination.is_absolute():
-            destination = BACKEND_DIR / destination
-        return destination.resolve()
-
-    folder_id = hashlib.sha256(
-        str(KNOWLEDGE_DIR.resolve()).encode()
-    ).hexdigest()[:12]
-    return rag._CACHE_ROOT / "published" / folder_id
+    if configured is not None and not configured.strip():
+        raise KnowledgeUnavailable("SPIA_PUBLISHED_DIR must not be empty")
+    destination = (
+        Path(configured.strip())
+        if configured is not None
+        else BACKEND_DIR / "data/published_knowledge"
+    )
+    if not destination.is_absolute():
+        destination = BACKEND_DIR / destination
+    return destination.resolve()
 
 
 def _pointer(expert: str) -> dict:

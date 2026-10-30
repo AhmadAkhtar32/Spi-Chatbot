@@ -87,82 +87,30 @@ class BusinessService:
         return self._data
 
     def _load(self):
-        selected = os.environ.get(
-            "BUSINESS_DATA_SOURCE", "snapshot_json"
-        )
-
-        if selected not in {"snapshot_json", "snapshot_json"}:
-            raise BusinessUnavailable(
-                "Selected business source is not implemented"
-            )
-
-        path = Path(
-            os.environ.get("BUSINESS_DATA_PATH")
-            or BACKEND_DIR / "data/sample_data.json"
-        )
-
+        selected = os.environ.get('BUSINESS_DATA_SOURCE', 'snapshot_json')
+        if selected not in {'snapshot_json', 'snapshot_json'}:
+            raise BusinessUnavailable('Selected business source is not implemented')
+        path = Path(os.environ.get('BUSINESS_DATA_PATH') or BACKEND_DIR / 'data/sample_data.json')
+        if not path.is_absolute():
+            path = BACKEND_DIR / path
         try:
-            with path.open("rb") as file:
+            with path.open('rb') as file:
                 raw = file.read(20 * 1024 * 1024 + 1)
-
             if len(raw) > 20 * 1024 * 1024:
-                raise ValueError(
-                    "Snapshot exceeds this adapter's size limit"
-                )
-
+                raise ValueError("Snapshot exceeds this adapter's size limit")
             self._data = json.loads(raw)
-
-            if (
-                not isinstance(self._data, dict)
-                or not isinstance(
-                    self._data.get("snapshot_at"), str
-                )
-            ):
-                raise ValueError("Invalid snapshot metadata")
-
-            collections = {
-                *MODULES,
-                "items",
-                "warehouses",
-                "parties",
-                "employees",
-            }
-
+            if not isinstance(self._data, dict) or not isinstance(self._data.get('snapshot_at'), str):
+                raise ValueError('Invalid snapshot metadata')
+            collections = {*MODULES, 'items', 'warehouses', 'parties', 'employees'}
             for kind in collections:
-                if (
-                    not isinstance(self.data.get(kind), list)
-                    or any(
-                        not isinstance(row, dict)
-                        for row in self.data[kind]
-                    )
-                ):
-                    raise ValueError("Invalid collection")
-
-        except (
-            OSError,
-            ValueError,
-            TypeError,
-            UnicodeError,
-        ):
-            raise BusinessUnavailable(
-                "Business snapshot is unavailable"
-            ) from None
-
+                if not isinstance(self.data.get(kind), list) or any((not isinstance(row, dict) for row in self.data[kind])):
+                    raise ValueError('Invalid collection')
+        except (OSError, ValueError, TypeError, UnicodeError):
+            raise BusinessUnavailable('Business snapshot is unavailable') from None
         try:
-            self.indexes = {
-                key: {
-                    row.get("id"): row
-                    for row in self.data[key]
-                }
-                for key in (
-                    "items", "warehouses",
-                    "parties", "employees",
-                )
-            }
+            self.indexes = {key: {row.get('id'): row for row in self.data[key]} for key in ('items', 'warehouses', 'parties', 'employees')}
         except (ValueError, TypeError):
-            raise BusinessUnavailable(
-                "Invalid lookup collection"
-            ) from None
+            raise BusinessUnavailable('Invalid lookup collection') from None
 
     def metadata(self):
         return {
