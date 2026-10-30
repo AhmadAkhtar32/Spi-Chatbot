@@ -57,86 +57,60 @@ def _json(path, limit):
 
 
 def read_configuration(directory=None):
-    """The directory is server configuration, never a browser parameter."""
-    selected = (
-        directory
-        if directory is not None
-        else os.environ.get("SPIA_SECURITY_DIR")
-    )
+    """Read trusted server files or a server-only encoded configuration."""
+    bundle = None
+    encoded = os.environ.get('SPIA_SECURITY_CONFIG_B64') if directory is None else None
+    if encoded is not None:
+        try:
+            if not encoded or len(encoded) > 48000:
+                raise ValueError('Configuration exceeds environment limits')
+            bundle = json.loads(base64.b64decode(encoded, validate=True).decode('utf-8'), object_pairs_hook=_unique)
+            expected = {'installation.json', 'company_license.json', 'user_access.json'}
+            if not isinstance(bundle, dict) or set(bundle) != expected:
+                raise ValueError('Incomplete environment configuration')
+            if any((not isinstance(value, str) for value in bundle.values())):
+                raise ValueError('Invalid environment configuration values')
+        except (ValueError, TypeError, UnicodeError, RecursionError):
+            raise SecurityConfigurationError('Invalid server environment security configuration') from None
+        root = None
+    else:
+        selected = directory if directory is not None else os.environ.get('SPIA_SECURITY_DIR')
+        if not selected:
+            raise SecurityConfigurationError('SPIA_SECURITY_DIR is not configured')
+        root = Path(selected).expanduser()
+        if not root.is_absolute():
+            raise SecurityConfigurationError('SPIA_SECURITY_DIR must be an absolute path')
 
-    if not selected:
-        raise SecurityConfigurationError(
-            "SPIA_SECURITY_DIR is not configured"
-        )
+    def _config_read(filename, limit):
+        if bundle is None:
+            return _read(root / filename, limit)
+        value = bundle[filename].encode('utf-8')
+        if len(value) > limit:
+            raise SecurityConfigurationError('Security configuration exceeds limits')
+        return value
 
-    root = Path(selected).expanduser()
-
-    if not root.is_absolute():
-        raise SecurityConfigurationError(
-            "SPIA_SECURITY_DIR must be an absolute path"
-        )
-
+    def _config_json(filename, limit):
+        return json.loads(_config_read(filename, limit).decode('utf-8'), object_pairs_hook=_unique)
     try:
-        settings = Installation.model_validate(
-            _json(root / "installation.json", 65536)
-        )
-
-        public_keys = {
-            key_id: base64.b64decode(
-                value.encode("ascii"),
-                validate=True,
-            )
-            for key_id, value in settings.public_keys.items()
-        }
-
-        if any(len(value) != 32 for value in public_keys.values()):
-            raise ValueError("Invalid public key length")
-
-        raw_users = _json(
-            root / "user_access.json",
-            4 * 1024 * 1024,
-        )
-
+        settings = Installation.model_validate(_config_json('installation.json', 65536))
+        public_keys = {key_id: base64.b64decode(value.encode('ascii'), validate=True) for key_id, value in settings.public_keys.items()}
+        if any((len(value) != 32 for value in public_keys.values())):
+            raise ValueError('Invalid public key length')
+        raw_users = _config_json('user_access.json', 4 * 1024 * 1024)
         if not isinstance(raw_users, list):
-            raise ValueError("Expected a list of users")
-
+            raise ValueError('Expected a list of users')
         users = {}
-
         for raw in raw_users:
             access = UserAccess.model_validate(raw)
-
             if access.user_id in users:
-                raise ValueError("Duplicate user")
-
-            if (
-                access.company_id,
-                access.installation_id,
-            ) != (
-                settings.company_id,
-                settings.installation_id,
-            ):
-                raise ValueError(
-                    "User belongs to a different installation"
-                )
-
+                raise ValueError('Duplicate user')
+            if (access.company_id, access.installation_id) != (settings.company_id, settings.installation_id):
+                raise ValueError('User belongs to a different installation')
             users[access.user_id] = access
-
-        license_bytes = _read(
-            root / "company_license.json",
-            MAX_LICENSE_BYTES,
-        )
-
-        return settings, public_keys, users, license_bytes
-
-    except (
-        ValidationError,
-        ValueError,
-        TypeError,
-        UnicodeError,
-    ):
-        raise SecurityConfigurationError(
-            "Invalid installation or user-access settings"
-        ) from None
+        license_bytes = _config_read('company_license.json', MAX_LICENSE_BYTES)
+        return (settings, public_keys, users, license_bytes)
+    except (ValidationError, ValueError, TypeError, UnicodeError):
+        raise SecurityConfigurationError('Invalid installation or user-access settings') from None
 
 
 def load_policy(identity: Identity, *, directory=None, now=None):
