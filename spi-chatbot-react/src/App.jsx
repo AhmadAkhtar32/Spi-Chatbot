@@ -1,96 +1,163 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  useOutletContext,
+  BrowserRouter, Routes, Route, Navigate, useOutletContext,
 } from 'react-router-dom'
-
 import AppShell from './layout/AppShell.jsx'
 import UnifiedChatPage from './pages/UnifiedChatPage.jsx'
-import DemoBusinessPage from './pages/DemoBusinessPage.jsx'
-import DemoBIPage from './pages/DemoBIPage.jsx'
-import ProjectKnowledgeExpertPage from './pages/ProjectKnowledgeExpertPage.jsx'
+import BusinessPage from './pages/BusinessPage.jsx'
+import BIPage from './pages/BIPage.jsx'
 import DocumentGeneratorPage from './pages/DocumentGeneratorPage.jsx'
-import ReportsPage from './pages/Reports.jsx'
+import ProjectKnowledgeExpertPage from './pages/ProjectKnowledgeExpertPage.jsx'
 import SettingsPage from './pages/Settings.jsx'
 import HelpPage from './pages/Help.jsx'
+import { API_BASE } from './api/client.js'
 
-const BUSINESS_PERMISSIONS = [
-  'stock.read',
-  'sales_orders.read',
-  'purchase_orders.read',
-  'tickets.read',
-  'payroll.read',
-  'payroll.read_self',
-]
-
-function DemoHome() {
+function AssistantHome() {
   const {
-    demoSession,
-    resetDemoChats,
+    assistantSession, resetAssistantChats, switchAssistantUser, scrollHeaders,
   } = useOutletContext()
 
-  const hasDocumentExpert = demoSession?.user.experts?.some(
-    (name) => (
-      name === 'support_expert'
-      || name === 'implementation_expert'
+  const token = assistantSession?.token
+  const [capability, setCapability] = useState(null)
+  const [view, setView] = useState('')
+  const [retry, setRetry] = useState(0)
+
+  useEffect(() => {
+    if (!token) return
+    const controller = new AbortController()
+
+    async function load() {
+      try {
+        const options = {
+          cache: 'no-store',
+          signal: controller.signal,
+          headers: { Authorization: `Bearer ${token}` },
+        }
+        const response = await fetch(
+          `${API_BASE}/api/v1/access`, options
+        )
+
+        if (response.status === 401 || response.status === 403) {
+          switchAssistantUser(
+            'Your session or access changed. Please open the assistant again.'
+          )
+          return
+        }
+        if (!response.ok) {
+          throw new Error('Could not check your current access.')
+        }
+
+        const access = await response.json()
+        const pairs = access.active_pairs || []
+        let templates = []
+
+        if (pairs.some(pair => pair.feature === 'document_generator')) {
+          const result = await fetch(
+            `${API_BASE}/api/v1/documents/templates`, options
+          )
+          if (result.status === 401) {
+            switchAssistantUser(
+              'Session expired. Please open the assistant again.'
+            )
+            return
+          }
+          if (result.ok) {
+            templates = (await result.json()).templates || []
+          } else if (result.status !== 403) {
+            throw new Error('Could not load document templates.')
+          }
+        }
+
+        if (!controller.signal.aborted) {
+          setCapability({ token, pairs, templates })
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setCapability({ token, error: error.message })
+        }
+      }
+    }
+
+    load()
+    const timer = setInterval(load, 30000)
+    window.addEventListener('focus', load)
+
+    return () => {
+      controller.abort()
+      clearInterval(timer)
+      window.removeEventListener('focus', load)
+    }
+  }, [token, retry])
+
+  if (!capability || capability.token !== token) {
+    return <p className="p-6 text-sm">Checking access…</p>
+  }
+
+  if (capability.error) {
+    return (
+      <div className="p-6 text-sm" role="alert">
+        <p>{capability.error}</p>
+        <button
+          className="mt-3 text-primary"
+          onClick={() => {
+            setCapability(null)
+            setRetry(value => value + 1)
+          }}
+        >
+          Retry
+        </button>
+      </div>
     )
-  )
+  }
 
-  const hasBusinessData = demoSession?.user.permissions?.some(
-    (name) => BUSINESS_PERMISSIONS.includes(name)
+  const has = feature => (
+    capability.pairs.some(pair => pair.feature === feature)
   )
-
-  const hasBI = (
-    demoSession?.user.experts?.includes('bi_expert')
-    && demoSession?.user.surface === 'spia_tsplus'
+  const hasTickets = (
+    has('support_expert') &&
+    assistantSession?.user.permissions?.includes('tickets.read')
   )
 
   const tabs = [
-    ...(hasDocumentExpert
-      ? [{ key: 'documents', label: 'Document expert' }]
-      : []),
-    ...(hasBusinessData
-      ? [{ key: 'business', label: 'Business records' }]
-      : []),
-    ...(hasBI
-      ? [{ key: 'bi', label: 'BI expert' }]
-      : []),
+    ...(has('support_expert') || has('implementation_expert')
+      ? [{ key: 'knowledge', label: 'Document expert' }] : []),
+    ...(capability.pairs.some(pair => pair.feature === 'project_knowledge_expert' && pair.module === 'project')
+      ? [{ key: 'company', label: 'Project Knowledge' }] : []),
+    ...(has('business_lookup') || hasTickets
+      ? [{ key: 'business', label: 'Business records' }] : []),
+    ...(has('bi_expert')
+      ? [{ key: 'bi', label: 'BI expert' }] : []),
+    ...(capability.templates.length
+      ? [{ key: 'generation', label: 'Document generator' }] : []),
   ]
 
-  const [view, setView] = useState(
-    hasBI
-      ? 'bi'
-      : hasDocumentExpert
-        ? 'documents'
-        : 'business'
-  )
+  const active = tabs.some(tab => tab.key === view)
+    ? view : tabs[0]?.key
 
-  const activeView = tabs.some(
-    (tab) => tab.key === view
-  )
-    ? view
-    : tabs[0]?.key
+  function renderFeatureTabs(content) {
+    return scrollHeaders?.tabs
+      ? createPortal(content, scrollHeaders.tabs)
+      : content
+  }
 
   function changeView(next) {
-    if (next === view) return
-    resetDemoChats()
+    if (next === active) return
+    resetAssistantChats()
     setView(next)
   }
 
   return (
     <>
-      {tabs.length > 1 && (
-        <div className="shrink-0 border-b border-border bg-surface px-4 py-2 flex gap-2 text-xs">
-          {tabs.map((tab) => (
+      {tabs.length > 1 && renderFeatureTabs(
+        <div className="shrink-0 border-b border-border bg-surface px-4 py-2 flex flex-wrap gap-3 text-xs">
+          {tabs.map(tab => (
             <button
               key={tab.key}
               type="button"
               onClick={() => changeView(tab.key)}
               className={
-                activeView === tab.key
+                active === tab.key
                   ? 'font-semibold text-primary'
                   : 'text-ink-secondary hover:text-primary'
               }
@@ -101,71 +168,40 @@ function DemoHome() {
         </div>
       )}
 
-      {activeView === 'documents'
-        ? <UnifiedChatPage demoMode />
-        : activeView === 'bi'
-          ? <DemoBIPage />
-          : activeView === 'business'
-            ? <DemoBusinessPage />
-            : (
-              <p className="p-6">
-                No licensed expert is available.
-              </p>
-            )}
+      {active === 'company'
+        ? <ProjectKnowledgeExpertPage key={token} />
+        : active === 'knowledge'
+        ? <UnifiedChatPage key={token} licensedMode />
+        : active === 'business'
+          ? <BusinessPage key={token} />
+          : active === 'bi'
+            ? <BIPage key={token} />
+            : active === 'generation'
+              ? (
+                <DocumentGeneratorPage
+                  key={token}
+                  templates={capability.templates}
+                />
+              )
+              : (
+                <p className="p-6">
+                  No available feature is assigned to this user.
+                </p>
+              )}
     </>
   )
 }
 
 export default function App() {
-  const demoMode = import.meta.env.VITE_DEMO_MODE === '1'
-
   return (
     <BrowserRouter>
       <Routes>
-        {demoMode ? (
-          <Route element={<AppShell demoMode />}>
-            <Route path="/" element={<DemoHome />} />
-            <Route
-              path="/settings"
-              element={<SettingsPage />}
-            />
-            <Route
-              path="/help"
-              element={<HelpPage />}
-            />
-            <Route
-              path="*"
-              element={<Navigate to="/" replace />}
-            />
-          </Route>
-        ) : (
-          <Route element={<AppShell />}>
-            <Route
-              path="/"
-              element={<UnifiedChatPage />}
-            />
-            <Route
-              path="/project-knowledge-expert"
-              element={<ProjectKnowledgeExpertPage />}
-            />
-            <Route
-              path="/document-generator"
-              element={<DocumentGeneratorPage />}
-            />
-            <Route
-              path="/reports"
-              element={<ReportsPage />}
-            />
-            <Route
-              path="/settings"
-              element={<SettingsPage />}
-            />
-            <Route
-              path="/help"
-              element={<HelpPage />}
-            />
-          </Route>
-        )}
+        <Route element={<AppShell licensedMode />}>
+          <Route path="/" element={<AssistantHome />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/help" element={<HelpPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -15,7 +15,7 @@ import TypingIndicator from '../components/TypingIndicator.jsx'
 import MessageInput from '../components/MessageInput.jsx'
 import SuggestionChip from '../components/SuggestionChip.jsx'
 import AnimatedBackground from '../components/AnimatedBackground.jsx'
-import { API_BASE } from '../api.js'
+import { API_BASE } from '../api/client.js'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -25,7 +25,7 @@ function getGreeting() {
   return 'Good evening'
 }
 
-// Legacy preview only. Demo mode uses verified module licenses.
+// Legacy preview only. Sample mode uses verified module licenses.
 const LICENSED_MODULES = ['financials']
 
 const MODULE_LABELS = {
@@ -40,7 +40,7 @@ const EXPERT_ROUTES = {
   implementation_expert: 'implementation',
 }
 
-// Legacy preview only. Demo mode fetches its questions.
+// Legacy preview only. Sample mode fetches its questions.
 const LEGACY_SUGGESTIONS = [
   {
     module: 'financials',
@@ -98,15 +98,17 @@ const LEGACY_SUGGESTIONS = [
 ]
 
 export default function UnifiedChatPage({
-  demoMode = false,
+  licensedMode = false,
 }) {
   const {
     conversationId,
     messages,
     setMessages,
-    demoSession,
-    switchDemoUser,
-    resetDemoChats,
+    assistantSession,
+    switchAssistantUser,
+    resetAssistantChats,
+    scrollHeaders,
+    setScrollHeaders,
   } = useOutletContext()
 
   const [loading, setLoading] = useState(false)
@@ -114,7 +116,7 @@ export default function UnifiedChatPage({
   const [selectedExpert, setSelectedExpert] = useState('')
   const [selectedModule, setSelectedModule] = useState('')
 
-  const [demoSuggestions, setDemoSuggestions] =
+  const [expertSuggestions, setExpertSuggestions] =
     useState([])
 
   const [suggestionsLoading, setSuggestionsLoading] =
@@ -123,39 +125,43 @@ export default function UnifiedChatPage({
   const [suggestionsError, setSuggestionsError] =
     useState('')
 
+  const identityHeaderRef = useRef(null)
+  const tabsHeaderRef = useRef(null)
   const scrollRef = useRef(null)
-  const activeTokenRef = useRef(demoSession?.token)
+  const imageRequest = useRef(null)
+  useEffect(() => () => imageRequest.current?.abort(), [conversationId, selectedExpert, selectedModule, assistantSession?.token])
+  const activeTokenRef = useRef(assistantSession?.token)
 
-  activeTokenRef.current = demoSession?.token
+  activeTokenRef.current = assistantSession?.token
 
   useEffect(() => {
-    activeTokenRef.current = demoSession?.token
+    activeTokenRef.current = assistantSession?.token
 
     return () => {
       activeTokenRef.current = null
     }
-  }, [demoSession?.token])
+  }, [assistantSession?.token])
 
   useEffect(() => {
-    if (!demoMode) return
+    if (!licensedMode) return
 
     setSelectedExpert(
-      demoSession?.user.experts?.find(
+      assistantSession?.user.experts?.find(
         (name) => EXPERT_ROUTES[name]
       ) || ''
     )
 
     setSelectedModule(
-      demoSession?.user.modules?.[0] || ''
+      assistantSession?.user.modules?.[0] || ''
     )
 
     setInputValue('')
-  }, [demoMode, demoSession?.token])
+  }, [licensedMode, assistantSession?.token])
 
   useEffect(() => {
     if (
-      !demoMode ||
-      !demoSession?.token ||
+      !licensedMode ||
+      !assistantSession?.token ||
       !selectedExpert ||
       !selectedModule
     ) {
@@ -164,7 +170,7 @@ export default function UnifiedChatPage({
 
     const controller = new AbortController()
 
-    setDemoSuggestions([])
+    setExpertSuggestions([])
     setSuggestionsError('')
     setSuggestionsLoading(true)
 
@@ -174,20 +180,20 @@ export default function UnifiedChatPage({
     })
 
     fetch(
-      `${API_BASE}/api/demo/experts/suggestions?${query}`,
+      `${API_BASE}/api/v1/experts/suggestions?${query}`,
       {
         cache: 'no-store',
         signal: controller.signal,
         headers: {
           Authorization:
-            `Bearer ${demoSession.token}`,
+            `Bearer ${assistantSession.token}`,
         },
       }
     )
       .then(async (response) => {
         if (response.status === 401) {
-          switchDemoUser(
-            'Demo session expired. Enter the presenter PIN again.'
+          switchAssistantUser(
+            'Sample session expired. Enter the presenter PIN again.'
           )
           return null
         }
@@ -211,7 +217,7 @@ export default function UnifiedChatPage({
           !controller.signal.aborted &&
           data
         ) {
-          setDemoSuggestions(
+          setExpertSuggestions(
             data.suggestions || []
           )
         }
@@ -232,24 +238,24 @@ export default function UnifiedChatPage({
 
     return () => controller.abort()
   }, [
-    demoMode,
-    demoSession?.token,
+    licensedMode,
+    assistantSession?.token,
     selectedExpert,
     selectedModule,
     conversationId,
   ])
 
   const allowedExperts =
-    demoSession?.user.experts?.filter(
+    assistantSession?.user.experts?.filter(
       (name) => EXPERT_ROUTES[name]
     ) || []
 
-  const allowedModules = demoMode
-    ? demoSession?.user.modules || []
+  const allowedModules = licensedMode
+    ? assistantSession?.user.modules || []
     : LICENSED_MODULES
 
-  const suggestions = demoMode
-    ? demoSuggestions.map((item, index) => ({
+  const suggestions = licensedMode
+    ? expertSuggestions.map((item, index) => ({
         icon: [
           FileText,
           BookOpen,
@@ -276,50 +282,87 @@ export default function UnifiedChatPage({
     MODULE_LABELS[selectedModule] ||
     selectedModule
 
-  const subtitle = demoMode
+  const subtitle = licensedMode
     ? `Ask the ${
         selectedExpert === 'support_expert'
           ? 'Support'
           : 'Implementation'
-      } Expert about ${moduleLabel}. Answers use approved demo documents.`
+      } Expert about ${moduleLabel}. Answers use approved sample documents.`
     : 'Ask about setup, usage, and troubleshooting for Financials.'
 
-  const placeholder = demoMode
+  const placeholder = licensedMode
     ? `Ask about ${moduleLabel}...`
     : 'Ask about Financials...'
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: 'smooth',
-    })
-  }, [messages, loading])
+  useLayoutEffect(() => {
+    if (!licensedMode || !setScrollHeaders) return
 
-  async function handleSend(
-    text,
-    source = null
-  ) {
+    setScrollHeaders({
+      identity: identityHeaderRef.current,
+      tabs: tabsHeaderRef.current,
+    })
+
+    return () => setScrollHeaders(null)
+  }, [licensedMode, setScrollHeaders, messages.length === 0])
+
+  // Read new replies from their beginning, not their final paragraph.
+  useLayoutEffect(() => {
+    const viewport = scrollRef.current
+    if (!viewport) return
+
+    if (!messages.length) {
+      viewport.scrollTop = 0
+      return
+    }
+
+    function alignLatest() {
+      const rows = viewport.querySelectorAll('[data-chat-message]')
+      const latest = rows[rows.length - 1]
+      if (!latest) return
+
+      const previous = rows[rows.length - 2]
+      const isReply = latest.dataset.chatRole === 'assistant'
+      const showQuestion = isReply &&
+        previous?.dataset.chatRole === 'user' &&
+        latest.offsetTop - previous.offsetTop <= viewport.clientHeight * 0.35
+
+      const target = showQuestion ? previous : latest
+      viewport.scrollTop = Math.max(0, target.offsetTop - 12)
+    }
+
+    alignLatest()
+    const frame = requestAnimationFrame(alignLatest)
+    return () => cancelAnimationFrame(frame)
+  }, [messages, conversationId, scrollHeaders])
+
+  async function handleSend(text, source = null, image = null) {
     if (
       !text?.trim() ||
       loading ||
       (
-        demoMode &&
+        licensedMode &&
         (
-          !demoSession ||
+          !assistantSession ||
           !selectedExpert ||
           !selectedModule
         )
       )
     ) {
-      return
+      return false
     }
 
+    if (image && !licensedMode) return false
+    const imageController = image ? new AbortController() : null
+    if (imageController) imageRequest.current = imageController
+    const imageTimeout = imageController ? setTimeout(() => imageController.abort(), 95000) : null
+
     const tokenAtSend =
-      demoSession?.token
+      assistantSession?.token
 
     const newUserMessage = {
       role: 'user',
       content: text,
+      attachment: image || undefined,
       timestamp: Date.now(),
     }
 
@@ -331,9 +374,14 @@ export default function UnifiedChatPage({
     setLoading(true)
 
     try {
-      const response = demoMode
+      const response = image
+        ? await fetch(`${API_BASE}/api/v1/experts/image-question?${new URLSearchParams({ expert: selectedExpert, module: selectedModule })}`, {
+            method: 'POST', cache: 'no-store', signal: imageController.signal,
+            headers: { Authorization: `Bearer ${tokenAtSend}`, 'Content-Type': image.type, 'X-SPIA-Question': btoa(String.fromCharCode(...new TextEncoder().encode(text))) }, body: image,
+          })
+        : licensedMode
         ? await fetch(
-            `${API_BASE}/api/demo/experts/${
+            `${API_BASE}/api/v1/experts/${
               EXPERT_ROUTES[selectedExpert]
             }`,
             {
@@ -373,27 +421,33 @@ export default function UnifiedChatPage({
             }
           )
 
+      if (imageController?.signal.aborted) return false
       if (
-        demoMode &&
+        licensedMode &&
         activeTokenRef.current !==
           tokenAtSend
       ) {
         return
       }
 
+      if (imageController?.signal.aborted) return false
       if (
-        demoMode &&
+        licensedMode &&
         response.status === 401
       ) {
-        switchDemoUser(
-          'Demo session expired. Enter the presenter PIN again.'
+        switchAssistantUser(
+          'Sample session expired. Enter the presenter PIN again.'
         )
         return
       }
 
+      if (image && !response.ok && response.status !== 401) {
+        const failure = await response.json().catch(() => ({}))
+        throw new Error(typeof failure.detail === 'string' ? failure.detail : `Screenshot request failed (${response.status}).`)
+      }
       if (!response.ok) {
         if (
-          demoMode &&
+          licensedMode &&
           response.status === 403
         ) {
           throw new Error(
@@ -408,8 +462,9 @@ export default function UnifiedChatPage({
 
       const data = await response.json()
 
+      if (imageController?.signal.aborted) return false
       if (
-        demoMode &&
+        licensedMode &&
         activeTokenRef.current !==
           tokenAtSend
       ) {
@@ -420,23 +475,30 @@ export default function UnifiedChatPage({
         ...previous,
         {
           role: 'assistant',
+          language: data.language,
+          translation_proof: data.translation_proof,
+          expert: EXPERT_ROUTES[selectedExpert],
+          module: selectedModule,
           content:
             data.reply ||
             'I received an empty response from the backend service.',
-          sources: demoMode
+          sources: licensedMode
             ? data.sources || []
             : undefined,
           timestamp: Date.now(),
         },
       ])
+      return true
     } catch (error) {
+      if (imageController?.signal.aborted) return false
       console.error(
         'Chat request failed:',
         error
       )
 
+      if (imageController?.signal.aborted) return false
       if (
-        demoMode &&
+        licensedMode &&
         activeTokenRef.current !==
           tokenAtSend
       ) {
@@ -447,14 +509,17 @@ export default function UnifiedChatPage({
         ...previous,
         {
           role: 'assistant',
-          content: demoMode
+          content: licensedMode
             ? error.message ||
-              'The demo expert is unavailable right now.'
+              'The sample expert is unavailable right now.'
             : 'Unable to reach the backend service. Confirm the API server is running.',
           timestamp: Date.now(),
         },
       ])
+      return false
     } finally {
+      clearTimeout(imageTimeout)
+      if (imageRequest.current === imageController) imageRequest.current = null
       setLoading(false)
     }
   }
@@ -469,7 +534,7 @@ export default function UnifiedChatPage({
       event.target.value
     )
 
-    resetDemoChats()
+    resetAssistantChats()
     setInputValue('')
   }
 
@@ -478,7 +543,7 @@ export default function UnifiedChatPage({
       event.target.value
     )
 
-    resetDemoChats()
+    resetAssistantChats()
     setInputValue('')
   }
 
@@ -486,10 +551,10 @@ export default function UnifiedChatPage({
     messages.length > 0
 
   return (
-    <div className="flex-1 relative overflow-hidden flex flex-col">
+    <div className="flex-1 min-h-0 min-w-0 relative overflow-hidden flex flex-col">
       <AnimatedBackground />
 
-      {demoMode &&
+      {licensedMode &&
         (
           allowedExperts.length > 1 ||
           allowedModules.length > 1
@@ -548,7 +613,17 @@ export default function UnifiedChatPage({
         )}
 
       {!hasMessages ? (
-        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-center px-6 py-5 relative z-10">
+        <div
+          ref={scrollRef}
+          role="region"
+          aria-label="Suggested questions"
+          tabIndex={0}
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain relative z-10"
+          style={{ overflowAnchor: 'none', scrollBehavior: 'auto' }}
+        >
+          <div ref={identityHeaderRef} />
+          <div ref={tabsHeaderRef} />
+          <div className="w-full flex flex-col items-center px-4 py-5 sm:px-6">
           <motion.h1
             initial={{
               opacity: 0,
@@ -585,17 +660,17 @@ export default function UnifiedChatPage({
             className="
               text-[13.5px]
               text-ink-secondary
-              mb-7
+              mb-4
               text-center
-              max-w-md
+              max-w-2xl
               leading-relaxed
             "
           >
             {subtitle}
           </p>
 
-          <div className="w-full max-w-4xl mt-2">
-            <div className="mb-3 flex items-center justify-between px-1">
+          <div className="w-full max-w-4xl">
+            <div className="mb-2 flex items-center justify-between gap-2 px-1">
               <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                 Quick actions
               </div>
@@ -605,7 +680,7 @@ export default function UnifiedChatPage({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 [&_button]:px-3 [&_button]:py-3">
               {suggestions.map(
                 (suggestion) => (
                   <SuggestionChip
@@ -630,7 +705,7 @@ export default function UnifiedChatPage({
               )}
             </div>
 
-            {demoMode &&
+            {licensedMode &&
               suggestionsLoading && (
                 <p
                   role="status"
@@ -640,7 +715,7 @@ export default function UnifiedChatPage({
                 </p>
               )}
 
-            {demoMode &&
+            {licensedMode &&
               suggestionsError && (
                 <p
                   role="alert"
@@ -650,7 +725,7 @@ export default function UnifiedChatPage({
                 </p>
               )}
 
-            {demoMode &&
+            {licensedMode &&
               !suggestionsLoading &&
               !suggestionsError &&
               suggestions.length < 6 && (
@@ -659,18 +734,34 @@ export default function UnifiedChatPage({
                 </p>
               )}
           </div>
+          </div>
         </div>
       ) : (
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto relative z-10"
+          role="region"
+          aria-label="Conversation"
+          tabIndex={0}
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain relative z-10"
+          style={{ overflowAnchor: 'none', scrollBehavior: 'auto' }}
         >
+          <div ref={identityHeaderRef} />
+          <div ref={tabsHeaderRef} />
           <div className="max-w-3xl mx-auto px-6 py-6 flex flex-col gap-4">
             {messages.map(
               (message, index) => (
-                <ChatMessage
-                  key={index}
+                <div key={index} data-chat-message data-chat-role={message.role}>
+                <ChatMessage attachment={message.attachment}
                   role={message.role}
+                  language={message.language}
+                  translation={licensedMode && message.translation_proof ? {
+                    token: assistantSession?.token,
+                    proof: message.translation_proof,
+                    expert: message.expert,
+                    module: message.module,
+                    sources: message.sources || [],
+                    onSessionExpired: switchAssistantUser,
+                  } : null}
                   content={
                     message.content
                   }
@@ -681,6 +772,7 @@ export default function UnifiedChatPage({
                     message.timestamp
                   }
                 />
+                </div>
               )
             )}
 
@@ -691,8 +783,9 @@ export default function UnifiedChatPage({
         </div>
       )}
 
-      <div className="relative z-10">
+      <div className="relative z-10 shrink-0">
         <MessageInput
+          key={`${conversationId}:${selectedExpert}:${selectedModule}:${assistantSession?.token || ""}`}
           onSend={handleSend}
           disabled={loading}
           value={inputValue}
@@ -706,9 +799,13 @@ export default function UnifiedChatPage({
           inputPlaceholder={
             placeholder
           }
-          voiceEnabled={
-            !demoMode
-          }
+          voiceEnabled={licensedMode && Boolean(assistantSession?.token && selectedExpert && selectedModule)}
+          showVoiceControl={licensedMode}
+          voiceContext={{ token: assistantSession?.token, expert: selectedExpert, module: selectedModule }}
+          onVoiceSessionExpired={switchAssistantUser}
+          imageEnabled={licensedMode && Boolean(assistantSession?.token && EXPERT_ROUTES[selectedExpert] && selectedModule)}
+          showAttachments={false}
+          maxChars={licensedMode ? 1000 : 2000}
         />
       </div>
     </div>

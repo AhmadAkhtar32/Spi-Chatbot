@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import TopBar from './TopBar.jsx'
 import Sidebar from './Sidebar.jsx'
-import { API_BASE } from '../api.js'
+import { API_BASE } from '../api/client.js'
 
 const CONVERSATIONS_KEY = 'spi-conversations'
 const ACTIVE_CHAT_KEY = 'spi-active-chat'
@@ -39,27 +40,35 @@ function loadConversations() {
   }
 }
 
-export default function AppShell({ demoMode = false }) {
+export default function AppShell({ licensedMode = false }) {
   const navigate = useNavigate()
   const location = useLocation()
+
+  const [scrollHeaders, setScrollHeaders] = useState(null)
+
+  function renderIdentityHeader(content) {
+    return scrollHeaders?.identity
+      ? createPortal(content, scrollHeaders.identity)
+      : content
+  }
 
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  // Demo chats stay in memory, including when a presenter changes users.
+  // Sample chats stay in memory, including when a presenter changes users.
   const [conversations, setConversations] = useState(() =>
-    demoMode ? [makeConversation()] : loadConversations()
+    licensedMode ? [makeConversation()] : loadConversations()
   )
 
-  const [demoPerson, setDemoPerson] = useState('demo_support')
-  const [demoPin, setDemoPin] = useState('')
-  const [demoSession, setDemoSession] = useState(null)
-  const [demoError, setDemoError] = useState('')
-  const [openingDemo, setOpeningDemo] = useState(false)
+  const [selectedPerson, setSelectedPerson] = useState('demo_support')
+  const [presenterPin, setPresenterPin] = useState('')
+  const [assistantSession, setAssistantSession] = useState(null)
+  const [sessionError, setSessionError] = useState('')
+  const [openingSession, setOpeningSession] = useState(false)
 
   const [activeId, setActiveId] = useState(() => {
     try {
-      const savedId = demoMode
+      const savedId = licensedMode
         ? null
         : localStorage.getItem(ACTIVE_CHAT_KEY)
 
@@ -102,7 +111,7 @@ export default function AppShell({ demoMode = false }) {
   }, [location.pathname])
 
   useEffect(() => {
-    if (demoMode) return
+    if (licensedMode) return
 
     try {
       localStorage.setItem(
@@ -112,17 +121,17 @@ export default function AppShell({ demoMode = false }) {
     } catch {
       // Ignore storage errors.
     }
-  }, [conversations, demoMode])
+  }, [conversations, licensedMode])
 
   useEffect(() => {
-    if (demoMode || !activeId) return
+    if (licensedMode || !activeId) return
 
     try {
       localStorage.setItem(ACTIVE_CHAT_KEY, activeId)
     } catch {
       // Ignore storage errors.
     }
-  }, [activeId, demoMode])
+  }, [activeId, licensedMode])
 
   useEffect(() => {
     if (conversations.length === 0) {
@@ -219,110 +228,95 @@ export default function AppShell({ demoMode = false }) {
     )
   }
 
-  function resetDemoChats() {
-    if (!demoMode) return
+  function resetAssistantChats() {
+    if (!licensedMode) return
 
     const first = makeConversation()
     setConversations([first])
     setActiveId(first.id)
   }
 
-  function switchDemoUser(message = '') {
-    setDemoSession(null)
-    setDemoPin('')
-    setDemoError(message)
-    resetDemoChats()
+  function switchAssistantUser(message = '') {
+    setAssistantSession(null)
+    setPresenterPin('')
+    setSessionError(message)
+    resetAssistantChats()
     navigate('/')
   }
 
-  async function openDemo(event) {
+  async function openAssistant(event) {
     event.preventDefault()
-    if (openingDemo || !demoPin.trim()) return
+    if (openingSession || !presenterPin.trim()) return
 
-    setOpeningDemo(true)
-    setDemoError('')
+    setOpeningSession(true)
+    setSessionError('')
 
     try {
-      const login = await fetch(`${API_BASE}/api/demo/session`, {
+      const login = await fetch(`${API_BASE}/api/v1/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         cache: 'no-store',
         body: JSON.stringify({
-          user_id: demoPerson,
+          user_id: selectedPerson,
           surface: 'spia_tsplus',
-          pin: demoPin,
+          pin: presenterPin,
         }),
       })
 
       if (!login.ok) {
         if (login.status === 401) {
           throw new Error(
-            'Incorrect presenter PIN or unavailable demo user.'
+            'Incorrect presenter PIN or unavailable sample user.'
           )
         }
 
         if (login.status === 404) {
           throw new Error(
-            'Enable demo sessions in the backend and restart it.'
+            'Enable sample sessions in the backend and restart it.'
           )
         }
 
         throw new Error(
-          `Could not open demo session (${login.status}).`
+          `Could not open sample session (${login.status}).`
         )
       }
 
       const { access_token: token } = await login.json()
 
-      const profile = await fetch(`${API_BASE}/api/demo/me`, {
+      const profile = await fetch(`${API_BASE}/api/v1/me`, {
         cache: 'no-store',
         headers: { Authorization: `Bearer ${token}` },
       })
 
       if (!profile.ok) {
         throw new Error(
-          `Could not load the demo user (${profile.status}).`
+          `Could not load the sample user (${profile.status}).`
         )
       }
 
       const user = await profile.json()
 
-      const hasExpert = user.experts?.some(
-        (name) =>
-          name === 'support_expert' ||
-          name === 'implementation_expert'
-      )
-
-      const hasBusinessData = user.permissions?.some(
-        (name) =>
-          [
-            'stock.read',
-            'sales_orders.read',
-            'purchase_orders.read',
-            'tickets.read',
-            'payroll.read',
-            'payroll.read_self',
-          ].includes(name)
-      )
-
-      if (
-        (!hasExpert && !hasBusinessData) ||
-        !user.modules?.length
-      ) {
-        throw new Error(
-          'This demo user has no available expert or business data.'
-        )
+      const accessResponse = await fetch(`${API_BASE}/api/v1/access`, {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!accessResponse.ok) {
+        throw new Error('Could not verify current access.')
+      }
+      const access = await accessResponse.json()
+      if (!access.active_pairs?.length) {
+        throw new Error('No active feature is assigned.')
       }
 
-      resetDemoChats()
-      setDemoSession({ token, user })
+      resetAssistantChats()
+      setAssistantSession({ token, user })
     } catch (error) {
-      setDemoError(
+      setSessionError(
         error.message || 'Could not open the assistant.'
       )
     } finally {
-      setDemoPin('')
-      setOpeningDemo(false)
+      setPresenterPin('')
+      setOpeningSession(false)
     }
   }
 
@@ -351,15 +345,15 @@ export default function AppShell({ demoMode = false }) {
         />
 
         <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-bg">
-          {demoMode && !demoSession ? (
+          {licensedMode && !assistantSession ? (
             <div className="flex-1 overflow-y-auto grid place-items-center p-5">
               <form
-                onSubmit={openDemo}
+                onSubmit={openAssistant}
                 className="card w-full max-w-md p-6 space-y-5"
               >
                 <div>
                   <h1 className="text-xl font-semibold">
-                    Open a demo session
+                    Open the assistant
                   </h1>
                   <p className="text-sm text-ink-secondary mt-1">
                     Choose a fictional SPIA user and enter the
@@ -368,11 +362,11 @@ export default function AppShell({ demoMode = false }) {
                 </div>
 
                 <label className="block text-sm font-medium">
-                  Demo user
+                  Presentation profile
                   <select
-                    value={demoPerson}
+                    value={selectedPerson}
                     onChange={(event) =>
-                      setDemoPerson(event.target.value)
+                      setSelectedPerson(event.target.value)
                     }
                     className="mt-2 w-full rounded-lg border border-border bg-bg px-3 py-2.5"
                   >
@@ -411,45 +405,45 @@ export default function AppShell({ demoMode = false }) {
                   <input
                     type="password"
                     autoComplete="off"
-                    value={demoPin}
+                    value={presenterPin}
                     onChange={(event) =>
-                      setDemoPin(event.target.value)
+                      setPresenterPin(event.target.value)
                     }
                     className="mt-2 w-full rounded-lg border border-border bg-bg px-3 py-2.5"
                     required
                   />
                 </label>
 
-                {demoError && (
+                {sessionError && (
                   <p
                     role="alert"
                     className="text-sm text-red-600"
                   >
-                    {demoError}
+                    {sessionError}
                   </p>
                 )}
 
                 <button
                   type="submit"
-                  disabled={openingDemo}
+                  disabled={openingSession}
                   className="w-full rounded-lg bg-primary px-4 py-2.5 text-white font-semibold disabled:opacity-50"
                 >
-                  {openingDemo ? 'Opening…' : 'Open assistant'}
+                  {openingSession ? 'Opening…' : 'Open assistant'}
                 </button>
               </form>
             </div>
           ) : (
             <>
-              {demoMode && (
+              {licensedMode && renderIdentityHeader(
                 <div className="shrink-0 border-b border-border bg-surface px-4 py-2 flex items-center justify-between gap-3 text-xs text-ink-secondary">
                   <span className="truncate">
-                    Team demo · {demoSession.user.id} ·{' '}
-                    {demoSession.user.role.replace(/_/g, ' ')}
+                    Internal presentation ·{' '}
+                    {assistantSession.user.role.replace(/_/g, ' ')}
                   </span>
 
                   <button
                     type="button"
-                    onClick={() => switchDemoUser()}
+                    onClick={() => switchAssistantUser()}
                     className="text-primary font-semibold whitespace-nowrap hover:underline"
                   >
                     Switch user
@@ -464,9 +458,11 @@ export default function AppShell({ demoMode = false }) {
                   messages:
                     activeConversation?.messages ?? [],
                   setMessages: setActiveMessages,
-                  demoSession,
-                  switchDemoUser,
-                  resetDemoChats,
+                  assistantSession,
+                  switchAssistantUser,
+                  resetAssistantChats,
+                  scrollHeaders,
+                  setScrollHeaders,
                 }}
               />
             </>

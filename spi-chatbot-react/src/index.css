@@ -558,3 +558,148 @@ select {
     font-size: 14.5px;
   }
 }
+
+/* Company knowledge: fixed layout rows */
+.spia-company-knowledge {
+  flex: 1 1 0%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.spia-company-knowledge > header {
+  min-width: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.spia-company-knowledge > [aria-label="Document conversation"] {
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.spia-company-knowledge > form {
+  min-width: 0;
+  position: relative;
+  z-index: 5;
+}
+
+.spia-company-knowledge textarea {
+  max-height: min(120px, 20dvh) !important;
+}
+
+
+/* SPIA composer and answer formatting */
+[data-spia-input-row] {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  min-height: 60px;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 24px;
+  background: rgb(var(--color-surface));
+  box-shadow: 0 2px 8px rgb(0 0 0 / .04);
+}
+[data-spia-input-row]:focus-within { border-color: rgb(var(--color-border)); }
+[data-spia-input-row] > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px !important;
+  height: 36px !important;
+  min-height: 36px;
+  flex-shrink: 0;
+  margin: 0 !important;
+  padding: 0;
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 50%;
+  color: rgb(var(--color-ink));
+  background: transparent;
+}
+[data-spia-input-row] > button:focus-visible {
+  outline: 2px solid rgb(var(--color-primary));
+  outline-offset: 3px;
+}
+[data-spia-input-row] > button:disabled { opacity: .4; cursor: not-allowed; }
+[data-spia-editor] { flex: 1 1 0%; min-width: 0; order: 0; }
+[data-spia-input-row] textarea {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  max-height: 160px;
+  resize: none;
+  margin: 0;
+  padding: 2px 4px 8px;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none;
+  color: rgb(var(--color-ink));
+  font-size: 14px;
+  line-height: 1.7;
+}
+[data-spia-input-row] textarea::placeholder { color: rgb(var(--color-ink-secondary) / .7); }
+[data-spia-input-row] [data-spia-attachment] { order: 1; border: 0; }
+[data-spia-input-row] [data-spia-mic] { order: 2; margin-inline-start: auto !important; border: 0; }
+[data-spia-input-row] [data-spia-send] { order: 3; color: white; background: rgb(var(--color-primary)); border: 0; }
+[data-spia-input-row][data-recording="true"] { flex-wrap: nowrap; min-height: 60px; padding: 10px; border-radius: 30px; gap: 10px; }
+[data-recording="true"] [data-spia-editor] { flex: 1 1 0%; order: 1; }
+[data-recording="true"] [data-spia-voice-cancel] { order: 0; }
+[data-recording="true"] [data-spia-mic] { border: 1px solid rgb(var(--color-border)); margin-inline-start: 0 !important; }
+[data-spia-input-row]:has([data-voice-state="recording"]) [data-spia-mic] { background: rgb(var(--color-ink)); color: rgb(var(--color-surface)); }
+[data-spia-input-row] [data-voice-state] { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 36px; padding: 0; border: 0; background: transparent; }
+[data-spia-input-row] canvas { display: block; width: 100%; height: 32px; color: rgb(var(--color-ink-secondary)); }
+
+.assistant-markdown h1,
+.assistant-markdown h2,
+.assistant-markdown h3,
+.assistant-markdown h4 {
+  margin: 1em 0 .5em;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.assistant-markdown h1 { font-size: 1.15em; }
+.assistant-markdown h2 { font-size: 1.1em; }
+.assistant-markdown h3,
+.assistant-markdown h4 { font-size: 1em; }
+.assistant-markdown > :first-child { margin-top: 0; }
+.assistant-markdown p { margin: 0 0 .75em; }
+.assistant-markdown ul,
+.assistant-markdown ol {
+  margin: .5em 0 .9em;
+  padding: 0;
+  padding-inline-start: 1.5em;
+  list-style-position: outside;
+}
+.assistant-markdown ol { list-style-type: decimal; }
+.assistant-markdown ul { list-style-type: disc; }
+.assistant-markdown ul ul { list-style-type: circle; }
+.assistant-markdown li {
+  margin: .35em 0;
+  padding-inline-start: .2em;
+}
+.assistant-markdown li > p { margin: .25em 0; }
+.assistant-markdown li::marker {
+  color: rgb(var(--color-ink-secondary));
+  font-variant-numeric: tabular-nums;
+}
+.assistant-markdown[dir="rtl"] li { text-align: start; }
+.assistant-markdown :not(pre) > code {
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.assistant-markdown pre {
+  direction: ltr;
+  text-align: left;
+}

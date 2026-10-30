@@ -1,184 +1,310 @@
-import { useEffect, useState } from 'react'
-import { FileText, Download, Copy, Check, Loader2 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
+import { FileText, Download, Copy, Loader2 } from 'lucide-react'
 import Breadcrumb from '../layout/Breadcrumb.jsx'
-import { API_BASE } from '../api.js'
+import { API_BASE } from '../api/client.js'
 
-export default function DocumentGeneratorPage() {
-  const [templates, setTemplates] = useState([])
-  const [selectedId, setSelectedId] = useState(null)
-  const [fieldValues, setFieldValues] = useState({})
+export default function DocumentGeneratorPage({ templates = [] }) {
+  const { assistantSession, switchAssistantUser } = useOutletContext()
+  const token = assistantSession?.token
+  const [selectedId, setSelectedId] = useState(templates[0]?.id || '')
+  const [recordId, setRecordId] = useState('')
   const [generating, setGenerating] = useState(false)
-  const [result, setResult] = useState(null) // { document_text, filename }
-  const [copied, setCopied] = useState(false)
-  const [error, setError] = useState(null)
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState('')
+  const [pdfUrl, setPdfUrl] = useState('')
+  const pending = useRef(null)
+  const selected = templates.find(template => template.id === selectedId)
+  const preview = result?.token === token && selected ? result : null
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/document-generator/templates`)
-      .then((res) => res.json())
-      .then((data) => {
-        setTemplates(data.templates || [])
-        if (data.templates?.length) setSelectedId(data.templates[0].id)
-      })
-      .catch(() => setError('Could not load templates. Confirm the backend is running.'))
-  }, [])
+    if (!preview?.pdf_base64) {
+      setPdfUrl('')
+      return
+    }
 
-  const selectedTemplate = templates.find((t) => t.id === selectedId)
+    let url
+
+    try {
+      const raw = atob(preview.pdf_base64)
+
+      if (!raw.startsWith('%PDF-')) {
+        throw new Error('Invalid PDF')
+      }
+
+      const bytes = Uint8Array.from(
+        raw,
+        character => character.charCodeAt(0)
+      )
+
+      url = URL.createObjectURL(
+        new Blob([bytes], { type: 'application/pdf' })
+      )
+
+      setPdfUrl(url)
+    } catch {
+      setPdfUrl('')
+      setError(
+        'The server did not return a valid PDF. Restart the updated backend and generate again.'
+      )
+    }
+
+    return () => {
+      if (url) URL.revokeObjectURL(url)
+    }
+  }, [preview?.pdf_base64, token])
+
+  useEffect(() => () => pending.current?.abort(), [])
 
   useEffect(() => {
-    setFieldValues({})
+    if (!templates.some(template => template.id === selectedId)) {
+      pending.current?.abort()
+      setSelectedId(templates[0]?.id || '')
+      setResult(null)
+      setRecordId('')
+      setGenerating(false)
+    }
+  }, [templates, selectedId])
+
+  function changeTemplate(value) {
+    pending.current?.abort()
+    setSelectedId(value)
+    setRecordId('')
     setResult(null)
-  }, [selectedId])
-
-  function updateField(key, value) {
-    setFieldValues((prev) => ({ ...prev, [key]: value }))
+    setError('')
+    setGenerating(false)
   }
 
-  async function handleGenerate(e) {
-    e.preventDefault()
+  async function generate(event) {
+    event.preventDefault()
+    if (generating || !selected || !token) return
+
+    const id = recordId.trim()
+    setResult(null)
+    setError('')
+
+    if (!/^[A-Za-z0-9-]{1,64}$/.test(id)) {
+      setError('Enter a valid source record ID.')
+      return
+    }
+
+    const controller = new AbortController()
+    pending.current = controller
     setGenerating(true)
-    setError(null)
+
     try {
-      const res = await fetch(`${API_BASE}/api/document-generator/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ template_id: selectedId, fields: fieldValues }),
-      })
-      if (!res.ok) throw new Error('Generation failed')
-      const data = await res.json()
-      setResult(data)
-    } catch (err) {
-      setError(err.message)
+      const response = await fetch(
+        `${API_BASE}/api/v1/documents/generate`,
+        {
+          method: 'POST',
+          cache: 'no-store',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            template_id: selected.id,
+            record_id: id,
+          }),
+        }
+      )
+
+      if (response.status === 401) {
+        switchAssistantUser(
+          'Session expired. Please open the assistant again.'
+        )
+        return
+      }
+      if (response.status === 403) {
+        throw new Error(
+          'You are not authorized to generate this document or its required fields.'
+        )
+      }
+      if (response.status === 404) {
+        throw new Error(
+          'The source record was not found or is unavailable to you.'
+        )
+      }
+      if (!response.ok) {
+        throw new Error(
+          'The document could not be generated. Please try again.'
+        )
+      }
+
+      const document = await response.json()
+      if (
+        typeof document.document_text !== 'string' ||
+        typeof document.pdf_base64 !== 'string' ||
+        !document.filename?.endsWith('.pdf') ||
+        document.template_id !== selected.id ||
+        document.record_id !== id
+      ) {
+        throw new Error('The server returned an unexpected document.')
+      }
+
+      if (!controller.signal.aborted) {
+        setResult({ ...document, token })
+      }
+    } catch (failure) {
+      if (!controller.signal.aborted) {
+        setError(failure.message || 'Could not connect to the server.')
+      }
     } finally {
-      setGenerating(false)
+      if (!controller.signal.aborted) setGenerating(false)
     }
   }
 
-  function handleCopy() {
-    if (!result) return
-    navigator.clipboard.writeText(result.document_text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+  async function copy() {
+    if (!preview) return
+    try {
+      await navigator.clipboard.writeText(preview.document_text)
+      setError('')
+    } catch {
+      setError(
+        'Copy failed. You can select the preview text or download the document.'
+      )
+    }
   }
 
-  function handleDownload() {
-    if (!result) return
-    const blob = new Blob([result.document_text], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = result.filename
-    a.click()
-    URL.revokeObjectURL(url)
+  function download() {
+    if (!preview || !pdfUrl) return
+
+    const link = document.createElement('a')
+    link.href = pdfUrl
+    link.download = preview.filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-8 py-8">
-        <div className="mb-1">
-          <Breadcrumb items={['Dashboard', 'Document Generator']} />
-        </div>
-        <h1 className="text-[19px] font-semibold text-ink mb-1">Document Generator</h1>
-        <p className="text-[13.5px] text-ink-secondary mb-6 max-w-2xl leading-relaxed">
-          Produces consistent, template-based deliverables. This fills a fixed template
-          deterministically from the fields you provide — it does not use the AI model, since
-          exact wording needs to stay identical every time a document is generated.
+    <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8">
+        <Breadcrumb items={['Dashboard', 'Document Generator']} />
+        <h1 className="text-[19px] font-semibold text-ink mt-2 mb-1">
+          Document Generator
+        </h1>
+        <p className="text-[13.5px] text-ink-secondary mb-6">
+          Choose a template and enter its source record ID. The document
+          uses the values you are permitted to access.
         </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Left: form */}
-          <div className="card p-5">
-            <label className="block text-[12.5px] font-medium text-ink-secondary mb-1.5">
+        <div className="flex flex-col gap-5">
+          <form onSubmit={generate} className="card p-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] items-end">
+            <label className="text-sm">
               Document type
-            </label>
-            <select
-              value={selectedId || ''}
-              onChange={(e) => setSelectedId(e.target.value)}
-              className="w-full h-9 px-2.5 mb-5 rounded-md border border-border bg-bg text-[13.5px] text-ink
-                         focus:outline-none focus:border-primary"
-            >
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-
-            {selectedTemplate && (
-              <form onSubmit={handleGenerate} className="flex flex-col gap-3.5">
-                {selectedTemplate.fields.map((f) => (
-                  <div key={f.key}>
-                    <label className="block text-[12px] font-medium text-ink-secondary mb-1">
-                      {f.label}
-                    </label>
-                    <input
-                      type={f.type === 'date' ? 'date' : 'text'}
-                      value={fieldValues[f.key] || ''}
-                      onChange={(e) => updateField(f.key, e.target.value)}
-                      required
-                      className="w-full h-9 px-3 rounded-md border border-border bg-bg text-[13px] text-ink
-                                 focus:outline-none focus:border-primary transition-colors"
-                    />
-                  </div>
+              <select
+                value={selected?.id || ''}
+                disabled={generating || !templates.length}
+                onChange={event => changeTemplate(event.target.value)}
+                className="mt-2 w-full rounded-md border border-border bg-bg px-3 py-2"
+              >
+                {templates.map(template => (
+                  <option key={template.id} value={template.id}>
+                    {template.name}
+                  </option>
                 ))}
+              </select>
+            </label>
 
-                <button
-                  type="submit"
-                  disabled={generating}
-                  className="mt-2 h-9 rounded-md bg-primary text-white text-[13px] font-medium
-                             hover:bg-primary-dark transition-colors disabled:opacity-50
-                             flex items-center justify-center gap-2"
-                >
-                  {generating ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-3.5 h-3.5" /> Generate document
-                    </>
-                  )}
-                </button>
-                {error && <p className="text-[12.5px] text-danger">{error}</p>}
-              </form>
+            <label className="text-sm">
+              Source record ID
+              <input
+                value={recordId}
+                required
+                maxLength={64}
+                disabled={generating || !selected}
+                placeholder={
+                  selectedId === 'purchase_order'
+                    ? 'Enter purchase order ID'
+                    : 'Enter credit/return note ID'
+                }
+                onChange={event => {
+                  setRecordId(event.target.value)
+                  setResult(null)
+                  setError('')
+                }}
+                className="mt-2 w-full rounded-md border border-border bg-bg px-3 py-2"
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={generating || !selected || !recordId.trim()}
+              className="rounded-md bg-primary text-white px-4 py-2.5 text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {generating
+                ? <Loader2 size={16} className="animate-spin" />
+                : <FileText size={16} />}
+              {generating ? 'Generating…' : 'Generate document'}
+            </button>
+
+            {error && (
+              <p role="alert" className="text-sm text-danger sm:col-span-2 lg:col-span-3">
+                {error}
+              </p>
             )}
-          </div>
+          </form>
 
-          {/* Right: preview */}
-          <div className="card p-5 flex flex-col">
+          <section className="card p-5 flex flex-col min-w-0">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-[13px] font-semibold text-ink">Preview</h2>
-              {result && (
-                <div className="flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold">PDF preview</h2>
+              {preview && (
+                <div className="flex gap-3">
                   <button
-                    onClick={handleCopy}
-                    className="w-7 h-7 rounded-md flex items-center justify-center text-ink-secondary hover:bg-slate-50 hover:text-ink transition-colors"
-                    title="Copy"
+                    type="button"
+                    onClick={copy}
+                    aria-label="Copy document"
+                    title="Copy document"
                   >
-                    {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                    <Copy size={16} />
                   </button>
                   <button
-                    onClick={handleDownload}
-                    className="w-7 h-7 rounded-md flex items-center justify-center text-ink-secondary hover:bg-slate-50 hover:text-ink transition-colors"
-                    title="Download"
+                    type="button"
+                    onClick={download}
+                    disabled={!pdfUrl}
+                    className="flex items-center gap-1 disabled:opacity-50"
+                    aria-label="Download PDF"
+                    title="Download PDF"
                   >
-                    <Download className="w-3.5 h-3.5" />
+                    <Download size={16} />
+                    <span className="text-xs ml-1">PDF</span>
                   </button>
                 </div>
               )}
             </div>
 
-            {result ? (
-              <pre className="flex-1 bg-bg border border-border rounded-md p-4 text-[12px] font-mono text-ink whitespace-pre-wrap overflow-auto">
-                {result.document_text}
-              </pre>
-            ) : (
-              <div className="flex-1 flex items-center justify-center text-center py-10">
-                <p className="text-[12.5px] text-ink-secondary/70 max-w-xs">
-                  Fill in the fields on the left and generate a document to see the preview here.
+            {preview ? (
+              <>
+                <p className="text-xs text-ink-secondary mb-2">
+                  Source: {preview.record_id}
                 </p>
-              </div>
+                {pdfUrl && (
+                  <div className="space-y-3">
+                    <a
+                      href={pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block text-sm text-primary underline"
+                    >
+                      Open PDF to print
+                    </a>
+
+                    <iframe
+                      title="Generated PDF preview"
+                      src={pdfUrl}
+                      className="block w-full max-w-[794px] mx-auto h-[70vh] min-h-[360px] rounded-md border border-border bg-white"
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-ink-secondary py-10 text-center">
+                Generate a document to see its original template here.
+              </p>
             )}
-          </div>
+          </section>
         </div>
       </div>
     </div>

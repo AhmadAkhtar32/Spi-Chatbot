@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "expert": "implementation",
+      "source": "gl_reports.txt",
+      "content_sha256": "eda689b7b9fe69cb9a7481c573b7d5a01246f23e55735113af430d4249733102",
+      "modules": [
+        "financial"
+      ],
+      "status": "approved",
+      "classifications": [
+        "general_guidance"
+      ]
+    },
+    {
+      "expert": "implementation",
+      "source": "gl_setup.txt",
+      "content_sha256": "d3abe69a6cb63dea93682f2b05e9c3ae5d1987501ece3fe0b03acc2f290d62d2",
+      "modules": [
+        "financial"
+      ],
+      "status": "approved",
+      "classifications": [
+        "general_guidance"
+      ]
+    },
+    {
+      "expert": "implementation",
+      "source": "gl_using_general_ledger.txt",
+      "content_sha256": "5a13c85d157467b64485aae080e2259f2ccd161ad4cf44bcb0d4224a4e065725",
+      "modules": [
+        "financial"
+      ],
+      "status": "approved",
+      "classifications": [
+        "general_guidance"
+      ]
+    },
+    {
+      "expert": "implementation",
+      "source": "gl_vouchers.txt",
+      "content_sha256": "88d79460fd7eda89e5679479e4a9fc5db8036bea9c12c67a8693861ef0b68681",
+      "modules": [
+        "financial"
+      ],
+      "status": "approved",
+      "classifications": [
+        "general_guidance"
+      ]
+    },
+    {
+      "expert": "implementation",
+      "source": "inventory_setup_guide.txt",
+      "content_sha256": "cc4357ca5c663c22334cd09f9983e69e24cac06eac378cca842714160e94f416",
+      "modules": [
+        "inventory"
+      ],
+      "status": "approved",
+      "classifications": [
+        "general_guidance"
+      ]
+    },
+    {
+      "expert": "implementation",
+      "source": "payroll_setup_guide.txt",
+      "content_sha256": "a578600a50d544e19cacb6fd4906e838b8df3812f4953ec7e1fb8daaa7b21832",
+      "modules": [
+        "payroll"
+      ],
+      "status": "approved",
+      "classifications": [
+        "general_guidance"
+      ]
+    },
+    {
+      "expert": "support",
+      "source": "gl_enquiries.txt",
+      "content_sha256": "b3edfcdfb4ff1090a08993914cb0bab8066396373273a46d25d4c24a867399f0",
+      "modules": [
+        "financial"
+      ],
+      "status": "approved",
+      "classifications": [
+        "general_guidance"
+      ]
+    },
+    {
+      "expert": "support",
+      "source": "gl_process.txt",
+      "content_sha256": "faeec8cf953ef95e68ba8b4a67ee539f34c87808c16a6fbe43ce8fd2985a5b72",
+      "modules": [
+        "financial"
+      ],
+      "status": "approved",
+      "classifications": [
+        "general_guidance"
+      ]
+    },
+    {
+      "expert": "support",
+      "source": "gl_reports.txt",
+      "content_sha256": "63f1c6cc66c9521be979274dc4d39b2c0e9011a944d1edca8403e234e8f2d5e2",
+      "modules": [
+        "financial"
+      ],
+      "status": "approved",
+      "classifications": [
+        "general_guidance"
+      ]
+    },
+    {
+      "expert": "support",
+      "source": "gl_select.txt",
+      "content_sha256": "55b22b5138a487288c8168c5f443d953914136deffa9847eb6e81a876070e3db",
+      "modules": [
+        "financial"
+      ],
+      "status": "approved",
+      "classifications": [
+        "general_guidance"
+      ]
+    },
+    {
+      "expert": "support",
+      "source": "inventory_incidents.txt",
+      "content_sha256": "93f8044b39774e99eeb8bb46138a1115dad63edee4100de93cd625768c92e15f",
+      "modules": [
+        "inventory"
+      ],
+      "status": "approved",
+      "classifications": [
+        "general_guidance"
+      ]
+    }
+  ],
+  "company_id": "SPIA-INTERNAL",
+  "installation_id": "SPIA-DEV-01"
+}

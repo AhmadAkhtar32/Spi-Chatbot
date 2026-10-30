@@ -9,3 +9,6 @@ groq==1.7.0
 google-genai==2.24.0
 python-dotenv==1.2.3
 python-multipart==0.0.32
+cryptography==50.0.1
+reportlab==4.4.9
+Pillow==12.3.0

@@ -38,3 +38,14 @@ __pycache__/
 !.env.example
 !.env.sample
 !.env.template
+
+# Runtime state and private installation files
+**/.cache/
+**/logs/
+**/backup-*/
+*.bak
+*.pem
+*.key
+installation.json
+company_license.json
+user_access.json
