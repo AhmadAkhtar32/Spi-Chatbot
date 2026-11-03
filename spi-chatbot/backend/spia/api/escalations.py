@@ -79,3 +79,65 @@ def prepare(context,cid,mid):
 def prepare_escalation(body:PrepareRequest,response:Response,context=Depends(require_access_context)):
     response.headers['Cache-Control']='no-store'
     return prepare(context,body.conversation_id,body.message_id)
+
+
+from typing import Literal
+
+class LivePrepare(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    expert:Literal['support','implementation','project_knowledge']
+    module:Literal['financial','inventory','payroll','project']
+    reply:str=Field(min_length=1,max_length=16000)
+    language:Literal['en','ur']
+    sources:list[str]=Field(default_factory=list,max_length=5)
+    question:str=Field(min_length=1,max_length=2000)
+    has_image:bool=False
+    proof:str=Field(pattern=r'^[a-f0-9]{64}$')
+
+def prepare_live(context,body):
+    import hmac
+    from spia.api import experts as x
+    if (body.expert=='project_knowledge')!=(body.module=='project'):
+        deny(422,'Expert and module do not match')
+    view=x.access(context,body.expert,body.module)
+    expected=x.reply_proof(
+        context,view,body.expert,body.module,
+        body.reply,body.sources,body.language
+    )
+    try:
+        signed=e.live_escalation_proof(expected)
+        if not hmac.compare_digest(body.proof,signed):
+            deny(403,'This answer changed or its access expired. Ask the question again.')
+        if not set(body.sources)<=view.sources:
+            deny(403,'REFERENCE_ACCESS_DENIED')
+        contacts=e.load_contacts(context)
+    except ValueError:
+        deny(503,'WhatsApp configuration is unavailable. Ask your administrator.')
+
+    recommended,reason=e.department(body.question,body.expert)
+    messages={
+        team:e.message(
+            body.question,body.module,team,'live conversation',
+            body.language=='ur',body.has_image
+        )
+        for team in e.TEAMS
+    }
+    x.confirm(view)
+    return {
+        'recommended':recommended,
+        'routing_reason':reason,
+        'contacts':[
+            {
+                'id':c.id,'name':c.name,'department':c.department,
+                'url':e.whatsapp_url(c.phone,messages[c.department]),
+            }
+            for c in contacts
+        ],
+        'messages':messages,
+        'has_image':body.has_image,
+    }
+
+@router.post('/prepare-live')
+def live_escalation(body:LivePrepare,response:Response,context=Depends(require_access_context)):
+    response.headers['Cache-Control']='no-store'
+    return prepare_live(context,body)

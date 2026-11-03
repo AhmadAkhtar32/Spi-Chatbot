@@ -251,23 +251,26 @@ export default function usePersonalHistory(session,expire){
   }
 
   function markResponse(data){
-    if(live.current.token!==boundToken||!data.history)return
+    if(live.current.token!==boundToken)return
     const r=data.history
     setChats(old=>old.map(c=>{
-      if(c.id!==r.conversation_id)return c
-      const messages=[...c.messages]
-      const a=messages.length-1
-      const u=a-1
-      if(messages[a]?.role==='assistant'){
-        messages[a]={...messages[a],id:r.answer_message_id,sequence:r.answer_sequence,escalation:data.escalation}
+      if(c.id!==(r?.conversation_id||boundId))return c
+      const messages=[...c.messages],a=messages.length-1,u=a-1
+      if(messages[a]?.role==='assistant')messages[a]={
+        ...messages[a],
+        id:r?.answer_message_id||messages[a].id||id(),
+        ...(r?{sequence:r.answer_sequence}:{}),
+        escalation:data.escalation,
+        escalation_proof:data.escalation_proof,
+        raw_sources:data.sources||[],
+        language:data.language||messages[a].language,
       }
-      if(messages[u]?.role==='user'){
-        messages[u]={...messages[u],id:r.user_message_id,sequence:r.user_sequence}
+      if(r&&messages[u]?.role==='user')messages[u]={
+        ...messages[u],id:r.user_message_id,sequence:r.user_sequence,
       }
-      return {...c,messages,revision:r.revision}
+      return {...c,messages,revision:r?.revision??c.revision}
     }))
   }
-
   async function saveNotice(question,notice){
     if(enabled===false)return {reply:notice}
     const headers=await prepare({view:'business'},question)

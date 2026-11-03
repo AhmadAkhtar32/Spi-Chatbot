@@ -2815,6 +2815,7 @@ def reply_proof(context, view, expert, module, reply, sources, language):
 
 
 def document_reply(context, view, expert, module, reply, sources, language):
+    from spia.services.escalation import live_escalation_proof
     from spia.services.escalation import pack_reply as escalation_pack_reply
     reply, escalation = escalation_pack_reply(reply, expert)
 
@@ -2834,7 +2835,7 @@ def document_reply(context, view, expert, module, reply, sources, language):
 
 
 
-    return {'escalation': escalation, 'reply': reply, 'sources': sources, 'knowledge_version': view.knowledge.version, 'language': language, 'translation_proof': reply_proof(context, view, expert, module, reply, sources, language)}
+    return {'escalation_proof': live_escalation_proof(reply_proof(context, view, expert, module, reply, sources, language)) if escalation['eligible'] else None, 'escalation': escalation, 'reply': reply, 'sources': sources, 'knowledge_version': view.knowledge.version, 'language': language, 'translation_proof': reply_proof(context, view, expert, module, reply, sources, language)}
 
 
 

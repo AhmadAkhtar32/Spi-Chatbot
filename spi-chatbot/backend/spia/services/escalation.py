@@ -105,6 +105,25 @@ def contacts_path():
     return h.database_path().parent/'whatsapp_contacts.json'
 
 def load_contacts(context):
+    support=os.environ.get('SPIA_WHATSAPP_SUPPORT')
+    implementation=os.environ.get('SPIA_WHATSAPP_IMPLEMENTATION')
+    if support is not None or implementation is not None:
+        entries=[]
+        for team,raw in (('support',support),('implementation',implementation)):
+            phones=filter(None,(p.strip() for p in (raw or '').split(',')))
+            for number,phone in enumerate(phones,1):
+                entries.append({
+                    'id':f'{team}-{number}',
+                    'department':team,
+                    'name':team.title()+f' {number}',
+                    'phone':phone,
+                })
+        data=Contacts(
+            company_id=context.identity.company_id,
+            installation_id=context.identity.installation_id,
+            contacts=entries,
+        )
+        return data.contacts
     path=contacts_path()
     if not path.is_file():
         return []
@@ -144,3 +163,19 @@ def message(question,module,team,reference,urdu=False,has_image=False):
 
 def whatsapp_url(phone,text):
     return 'https://wa.me/'+phone+'?text='+quote(text,safe='')
+
+
+def live_escalation_proof(answer_proof):
+    import hashlib
+    import hmac
+    secret=(
+        os.environ.get('SPIA_RESPONSE_SIGNING_SECRET')
+        or os.environ.get('PRESENTER_SESSION_SECRET','')
+    )
+    if len(secret)<32:
+        raise ValueError('Response signing is not configured')
+    return hmac.new(
+        secret.encode('utf-8'),
+        ('SPIA-live-escalation-v1:'+answer_proof).encode('ascii'),
+        hashlib.sha256,
+    ).hexdigest()

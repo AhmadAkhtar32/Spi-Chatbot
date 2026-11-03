@@ -30,14 +30,40 @@ export default function EscalationActions({messageId}) {
     const timer=setTimeout(()=>controller.abort(),15000)
     setBusy(true);setError('')
     try{
-      const response=await fetch(`${API_BASE}/api/v1/escalations/prepare`,{
-        method:'POST',cache:'no-store',signal:controller.signal,
-        headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
-        body:JSON.stringify({
-          conversation_id:conversationId||history?.active,
-          message_id:messageId,
-        }),
-      })
+      const saved=history?.activeChat?.saved===true
+      let body={
+        conversation_id:conversationId||history?.active,
+        message_id:messageId,
+      }
+      if(!saved){
+        const index=messages.findIndex(m=>m.id===messageId)
+        const question=messages[index-1]
+        if(!item.escalation_proof||question?.role!=='user'){
+          throw new Error('Ask the question again after the updated backend is deployed.')
+        }
+        const scope=history?.scope
+        body={
+          expert:scope?.view==='company'?'project_knowledge':scope?.expert,
+          module:scope?.module,
+          reply:item.content,
+          language:item.language||'en',
+          sources:item.raw_sources||[],
+          question:question.content,
+          has_image:!!question.attachment,
+          proof:item.escalation_proof,
+        }
+      }
+      const response=await fetch(
+        `${API_BASE}/api/v1/escalations/${saved?'prepare':'prepare-live'}`,
+        {
+          method:'POST',cache:'no-store',signal:controller.signal,
+          headers:{
+            'Content-Type':'application/json',
+            Authorization:`Bearer ${token}`,
+          },
+          body:JSON.stringify(body),
+        }
+      )
       if(response.status===401){
         switchAssistantUser?.('Session expired. Please open the assistant again.')
         return
