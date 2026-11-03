@@ -4,7 +4,7 @@ import { API_BASE } from '../api/client.js'
 
 export default function MessageInput({
   onSend, disabled, value, onValueChange, onClear, hasMessages, inputPlaceholder,
-  imageEnabled = false,
+  initialImage = null, imageEnabled = false,
   voiceEnabled = false, voiceContext = null, onVoiceSessionExpired,
   showAttachments = true, showVoiceControl = true, maxChars = 2000,
 }) {
@@ -13,7 +13,8 @@ export default function MessageInput({
   const [seconds, setSeconds] = useState(0)
   const [voiceError, setVoiceError] = useState('')
   const [voiceNotice, setVoiceNotice] = useState('')
-  const [imageFile, setImageFile] = useState(null)
+  const [imageFile, setImageFile] = useState(initialImage)
+  useEffect(() => {setImageFile(initialImage)}, [initialImage])
   const [imagePreview, setImagePreview] = useState('')
   const imagePicker = useRef(null)
   const imageSending = useRef(false)

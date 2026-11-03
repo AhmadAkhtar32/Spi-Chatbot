@@ -1,3 +1,5 @@
+import HistoryRow from '../components/HistoryRow.jsx'
+import HistoryTools from '../components/HistoryTools.jsx'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   Plus,
@@ -22,6 +24,7 @@ const FOOTER_ITEMS = [
 ]
 
 export default function Sidebar({
+  history,
   collapsed,
   onToggle,
   mobileOpen,
@@ -109,6 +112,7 @@ export default function Sidebar({
 
       {/* Recent Chats */}
       <nav className="flex-1 overflow-y-auto px-2.5 pb-3">
+        {!collapsed && history && <HistoryTools history={history} />}
         <div
           className={`
             px-2.5
@@ -127,70 +131,11 @@ export default function Sidebar({
         </div>
 
         <div className="flex flex-col gap-0.5">
-          {conversations.map((conversation) => {
-            const active =
-              isChatPage &&
-              conversation.id === activeId
-
-            return (
-              <button
-                type="button"
-                key={conversation.id}
-                onClick={() =>
-                  onSelectChat(conversation.id)
-                }
-                title={
-                  collapsed
-                    ? conversation.title
-                    : undefined
-                }
-                className={`
-                  group
-                  w-full
-                  flex
-                  items-center
-                  gap-3
-                  px-3
-                  py-2.5
-                  rounded-lg
-                  text-left
-                  text-[13.5px]
-                  font-medium
-                  transition-all
-                  duration-150
-
-                  ${
-                    active
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-ink-secondary hover:bg-hover hover:text-ink'
-                  }
-                `}
-              >
-                <MessageSquareText
-                  className={`
-                    w-4 h-4
-                    shrink-0
-
-                    ${
-                      active
-                        ? 'text-primary'
-                        : 'text-ink-secondary'
-                    }
-                  `}
-                  strokeWidth={2}
-                />
-
-                <span
-                  className={`
-                    truncate flex-1
-                    ${collapsed ? 'md:hidden' : ''}
-                  `}
-                >
-                  {conversation.title}
-                </span>
-              </button>
-            )
-          })}
+          {conversations.map(conversation => (
+            <HistoryRow key={conversation.id} conversation={conversation}
+              active={isChatPage && conversation.id === activeId}
+              collapsed={collapsed} onSelect={onSelectChat} history={history}/>
+          ))}
         </div>
       </nav>
 

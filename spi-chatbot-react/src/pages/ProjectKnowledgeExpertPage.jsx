@@ -1,3 +1,4 @@
+import { HistoryOlder } from '../components/HistoryTools.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import ChatMessage from '../components/ChatMessage.jsx'
@@ -12,6 +13,9 @@ export default function ProjectKnowledgeExpertPage() {
     assistantSession,
     switchAssistantUser,
     conversationId,
+    history,
+    messages,
+    setMessages,
   } = useOutletContext()
 
   const token = assistantSession?.token
@@ -20,7 +24,6 @@ export default function ProjectKnowledgeExpertPage() {
   const [sources, setSources] = useState([])
   const [receipts, setReceipts] = useState([])
   const [selected, setSelected] = useState('')
-  const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
   const [checking, setChecking] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -190,15 +193,17 @@ export default function ProjectKnowledgeExpertPage() {
   }, [token])
 
   useEffect(() => {
-    clearChat()
+    answer.current?.abort();setLoading(false);setText('')
+    if(history.scope?.view !== 'company')history.activateScope({view:'company'})
   }, [conversationId])
+  useEffect(() => {setText(history.draft?.text || '');if(history.draft?.source)setSelected(history.draft.source)}, [history.draft])
 
   useEffect(() => {
     scroll.current?.scrollTo({
       top: scroll.current.scrollHeight,
       behavior: 'smooth',
     })
-  }, [messages, loading])
+  }, [messages.at(-1)?.id, messages.at(-1)?.content, loading, conversationId])
 
   async function upload(event) {
     const file = event.target.files?.[0]
@@ -290,10 +295,13 @@ export default function ProjectKnowledgeExpertPage() {
       },
     ])
 
+    history.busy.current++
     try {
+      const historyHeaders = await history.prepare({view:'company'},question)
       const result = await request('', controller, {
         method: 'POST',
         headers: {
+          ...historyHeaders,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -332,6 +340,7 @@ export default function ProjectKnowledgeExpertPage() {
           }),
         },
       ])
+      history.markResponse(result)
     } catch (failure) {
       if (alive.current && !controller.signal.aborted) {
         if ([401, 403, 503].includes(failure.status)) {
@@ -343,6 +352,7 @@ export default function ProjectKnowledgeExpertPage() {
         setError(failure.message)
       }
     } finally {
+      history.busy.current=Math.max(0,history.busy.current-1)
       pending.current.delete(controller)
 
       if (answer.current === controller) {
@@ -449,6 +459,7 @@ export default function ProjectKnowledgeExpertPage() {
             className="min-w-0 flex-1 rounded-md border border-border bg-bg px-3 py-2 text-sm text-ink focus:outline-none focus:border-primary disabled:opacity-60"
             onChange={event => {
               clearChat()
+              history.newChat({view:'company'})
               setSelected(event.target.value)
               setError('')
             }}
@@ -510,8 +521,9 @@ export default function ProjectKnowledgeExpertPage() {
             </div>
           )}
 
+          <HistoryOlder history={history} />
           {messages.map((item, index) => (
-            <ChatMessage key={index} {...item} translation={item.translation_proof ? {
+            <ChatMessage messageId={item.id} onEdit={item.id && item.role === 'user' ? () => history.edit(item.id).catch(e => history.setError(e.message)) : undefined} key={item.id || index} {...item} translation={item.translation_proof ? {
             token,
             proof: item.translation_proof,
             expert: 'project_knowledge',
@@ -529,7 +541,7 @@ export default function ProjectKnowledgeExpertPage() {
         onSend={send}
         value={text}
         onValueChange={setText}
-        onClear={clearChat}
+        onClear={() => {clearChat();history.newChat()}}
         hasMessages={!!messages.length}
         voiceEnabled={false}
         showVoiceControl={false}

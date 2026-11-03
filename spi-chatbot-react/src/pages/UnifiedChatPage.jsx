@@ -1,3 +1,4 @@
+import { HistoryOlder } from '../components/HistoryTools.jsx'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -107,14 +108,19 @@ export default function UnifiedChatPage({
     assistantSession,
     switchAssistantUser,
     resetAssistantChats,
+    history,
     scrollHeaders,
     setScrollHeaders,
   } = useOutletContext()
 
   const [loading, setLoading] = useState(false)
   const [inputValue, setInputValue] = useState('')
-  const [selectedExpert, setSelectedExpert] = useState('')
-  const [selectedModule, setSelectedModule] = useState('')
+  const selectedExpert = history.scope?.view === 'knowledge' ? history.scope.expert+'_expert' : assistantSession?.user.experts?.find(name => EXPERT_ROUTES[name]) || ''
+  const selectedModule = history.scope?.view === 'knowledge' ? history.scope.module : assistantSession?.user.modules?.[0] || ''
+  useEffect(() => {
+    if (selectedExpert && selectedModule && history.scope?.view !== 'knowledge') history.activateScope({view:'knowledge',expert:selectedExpert.replace('_expert',''),module:selectedModule})
+  }, [selectedExpert, selectedModule, conversationId])
+  useEffect(() => { setInputValue(history.draft?.text || '') }, [conversationId, history.draft])
 
   const [expertSuggestions, setExpertSuggestions] =
     useState([])
@@ -141,22 +147,6 @@ export default function UnifiedChatPage({
       activeTokenRef.current = null
     }
   }, [assistantSession?.token])
-
-  useEffect(() => {
-    if (!licensedMode) return
-
-    setSelectedExpert(
-      assistantSession?.user.experts?.find(
-        (name) => EXPERT_ROUTES[name]
-      ) || ''
-    )
-
-    setSelectedModule(
-      assistantSession?.user.modules?.[0] || ''
-    )
-
-    setInputValue('')
-  }, [licensedMode, assistantSession?.token])
 
   useEffect(() => {
     if (
@@ -333,7 +323,7 @@ export default function UnifiedChatPage({
     alignLatest()
     const frame = requestAnimationFrame(alignLatest)
     return () => cancelAnimationFrame(frame)
-  }, [messages, conversationId, scrollHeaders])
+  }, [messages.at(-1)?.id, messages.at(-1)?.content, conversationId, scrollHeaders])
 
   async function handleSend(text, source = null, image = null) {
     if (
@@ -372,12 +362,13 @@ export default function UnifiedChatPage({
     ])
 
     setLoading(true)
-
+    history.busy.current++
     try {
+      const historyHeaders = await history.prepare({view:'knowledge',expert:EXPERT_ROUTES[selectedExpert],module:selectedModule},text)
       const response = image
         ? await fetch(`${API_BASE}/api/v1/experts/image-question?${new URLSearchParams({ expert: selectedExpert, module: selectedModule })}`, {
             method: 'POST', cache: 'no-store', signal: imageController.signal,
-            headers: { Authorization: `Bearer ${tokenAtSend}`, 'Content-Type': image.type, 'X-SPIA-Question': btoa(String.fromCharCode(...new TextEncoder().encode(text))) }, body: image,
+            headers: { ...historyHeaders, Authorization: `Bearer ${tokenAtSend}`, 'Content-Type': image.type, 'X-SPIA-Question': btoa(String.fromCharCode(...new TextEncoder().encode(text))) }, body: image,
           })
         : licensedMode
         ? await fetch(
@@ -388,6 +379,7 @@ export default function UnifiedChatPage({
               method: 'POST',
               cache: 'no-store',
               headers: {
+                ...historyHeaders,
                 'Content-Type':
                   'application/json',
                 Authorization:
@@ -488,6 +480,7 @@ export default function UnifiedChatPage({
           timestamp: Date.now(),
         },
       ])
+      history.markResponse(data)
       return true
     } catch (error) {
       if (imageController?.signal.aborted) return false
@@ -518,6 +511,7 @@ export default function UnifiedChatPage({
       ])
       return false
     } finally {
+      history.busy.current = Math.max(0, history.busy.current - 1)
       clearTimeout(imageTimeout)
       if (imageRequest.current === imageController) imageRequest.current = null
       setLoading(false)
@@ -525,27 +519,12 @@ export default function UnifiedChatPage({
   }
 
   function handleClear() {
-    setMessages([])
+    history.newChat()
     setInputValue('')
   }
 
-  function changeExpert(event) {
-    setSelectedExpert(
-      event.target.value
-    )
-
-    resetAssistantChats()
-    setInputValue('')
-  }
-
-  function changeModule(event) {
-    setSelectedModule(
-      event.target.value
-    )
-
-    resetAssistantChats()
-    setInputValue('')
-  }
+  function changeExpert(event) { history.activateScope({view:'knowledge',expert:event.target.value.replace('_expert',''),module:selectedModule});setInputValue('') }
+  function changeModule(event) { history.activateScope({view:'knowledge',expert:selectedExpert.replace('_expert',''),module:event.target.value});setInputValue('') }
 
   const hasMessages =
     messages.length > 0
@@ -619,7 +598,7 @@ export default function UnifiedChatPage({
           aria-label="Suggested questions"
           tabIndex={0}
           className="flex-1 min-h-0 overflow-y-auto overscroll-contain relative z-10"
-          style={{ overflowAnchor: 'none', scrollBehavior: 'auto' }}
+          style={{ overflowAnchor: 'auto', scrollBehavior: 'auto' }}
         >
           <div ref={identityHeaderRef} />
           <div ref={tabsHeaderRef} />
@@ -743,15 +722,16 @@ export default function UnifiedChatPage({
           aria-label="Conversation"
           tabIndex={0}
           className="flex-1 min-h-0 overflow-y-auto overscroll-contain relative z-10"
-          style={{ overflowAnchor: 'none', scrollBehavior: 'auto' }}
+          style={{ overflowAnchor: 'auto', scrollBehavior: 'auto' }}
         >
           <div ref={identityHeaderRef} />
           <div ref={tabsHeaderRef} />
           <div className="max-w-3xl mx-auto px-6 py-6 flex flex-col gap-4">
+            <HistoryOlder history={history} />
             {messages.map(
               (message, index) => (
-                <div key={index} data-chat-message data-chat-role={message.role}>
-                <ChatMessage attachment={message.attachment}
+                <div key={message.id || index} data-chat-message data-chat-role={message.role}>
+                <ChatMessage messageId={message.id} onEdit={message.id && message.role === 'user' ? () => history.edit(message.id).catch(e => history.setError(e.message)) : undefined} attachment={message.attachment}
                   role={message.role}
                   language={message.language}
                   translation={licensedMode && message.translation_proof ? {
@@ -786,7 +766,8 @@ export default function UnifiedChatPage({
       <div className="relative z-10 shrink-0">
         <MessageInput
           key={`${conversationId}:${selectedExpert}:${selectedModule}:${assistantSession?.token || ""}`}
-          onSend={handleSend}
+          initialImage={history.draft?.image}
+          onSend={(text, source, image) => handleSend(text, source || history.draft?.source || null, image)}
           disabled={loading}
           value={inputValue}
           onValueChange={

@@ -15,7 +15,7 @@ import { API_BASE } from './api/client.js'
 
 function AssistantHome() {
   const {
-    assistantSession, resetAssistantChats, switchAssistantUser, scrollHeaders,
+    assistantSession, history, switchAssistantUser, scrollHeaders,
   } = useOutletContext()
 
   const token = assistantSession?.token
@@ -132,8 +132,8 @@ function AssistantHome() {
       ? [{ key: 'generation', label: 'Document generator' }] : []),
   ]
 
-  const active = tabs.some(tab => tab.key === view)
-    ? view : tabs[0]?.key
+  const chosen = history.scope?.view || view
+  const active = tabs.some(tab => tab.key === chosen) ? chosen : tabs[0]?.key
 
   function renderFeatureTabs(content) {
     return scrollHeaders?.tabs
@@ -143,7 +143,10 @@ function AssistantHome() {
 
   function changeView(next) {
     if (next === active) return
-    resetAssistantChats()
+    if (next === 'knowledge') {
+      const pair = capability.pairs.find(p => ['support_expert','implementation_expert'].includes(p.feature))
+      history.activateScope({view:next,expert:pair.feature.replace('_expert',''),module:pair.module})
+    } else history.activateScope({view:next})
     setView(next)
   }
 

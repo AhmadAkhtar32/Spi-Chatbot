@@ -2,43 +2,10 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 
+import usePersonalHistory from '../services/usePersonalHistory.js'
 import TopBar from './TopBar.jsx'
 import Sidebar from './Sidebar.jsx'
 import { API_BASE } from '../api/client.js'
-
-const CONVERSATIONS_KEY = 'spi-conversations'
-const ACTIVE_CHAT_KEY = 'spi-active-chat'
-
-function makeConversation() {
-  return {
-    id:
-      typeof crypto !== 'undefined' && crypto.randomUUID
-        ? crypto.randomUUID()
-        : String(Date.now() + Math.random()),
-    title: 'New chat',
-    messages: [],
-  }
-}
-
-function loadConversations() {
-  try {
-    const saved = localStorage.getItem(CONVERSATIONS_KEY)
-
-    if (!saved) {
-      return [makeConversation()]
-    }
-
-    const parsed = JSON.parse(saved)
-
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      return [makeConversation()]
-    }
-
-    return parsed
-  } catch {
-    return [makeConversation()]
-  }
-}
 
 export default function AppShell({ licensedMode = false }) {
   const navigate = useNavigate()
@@ -55,42 +22,15 @@ export default function AppShell({ licensedMode = false }) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  // Sample chats stay in memory, including when a presenter changes users.
-  const [conversations, setConversations] = useState(() =>
-    licensedMode ? [makeConversation()] : loadConversations()
-  )
-
   const [selectedPerson, setSelectedPerson] = useState('demo_support')
   const [presenterPin, setPresenterPin] = useState('')
   const [assistantSession, setAssistantSession] = useState(null)
   const [sessionError, setSessionError] = useState('')
   const [openingSession, setOpeningSession] = useState(false)
 
-  const [activeId, setActiveId] = useState(() => {
-    try {
-      const savedId = licensedMode
-        ? null
-        : localStorage.getItem(ACTIVE_CHAT_KEY)
-
-      if (
-        savedId &&
-        conversations.some(
-          (conversation) => conversation.id === savedId
-        )
-      ) {
-        return savedId
-      }
-    } catch {
-      // Ignore storage errors.
-    }
-
-    return conversations[0]?.id ?? null
-  })
-
-  const activeConversation =
-    conversations.find(
-      (conversation) => conversation.id === activeId
-    ) ?? conversations[0]
+  const history = usePersonalHistory(assistantSession, switchAssistantUser)
+  const conversations = history.chats, activeId = history.active, activeConversation = history.activeChat
+  const setActiveMessages = history.setMessages
 
   useEffect(() => {
     function handleEscape(event) {
@@ -110,131 +50,9 @@ export default function AppShell({ licensedMode = false }) {
     setMobileOpen(false)
   }, [location.pathname])
 
-  useEffect(() => {
-    if (licensedMode) return
-
-    try {
-      localStorage.setItem(
-        CONVERSATIONS_KEY,
-        JSON.stringify(conversations)
-      )
-    } catch {
-      // Ignore storage errors.
-    }
-  }, [conversations, licensedMode])
-
-  useEffect(() => {
-    if (licensedMode || !activeId) return
-
-    try {
-      localStorage.setItem(ACTIVE_CHAT_KEY, activeId)
-    } catch {
-      // Ignore storage errors.
-    }
-  }, [activeId, licensedMode])
-
-  useEffect(() => {
-    if (conversations.length === 0) {
-      const conversation = makeConversation()
-      setConversations([conversation])
-      setActiveId(conversation.id)
-      return
-    }
-
-    const exists = conversations.some(
-      (conversation) => conversation.id === activeId
-    )
-
-    if (!exists) {
-      setActiveId(conversations[0].id)
-    }
-  }, [conversations, activeId])
-
-  function newChat() {
-    if (
-      activeConversation &&
-      activeConversation.messages.length === 0 &&
-      activeConversation.title === 'New chat'
-    ) {
-      setMobileOpen(false)
-      navigate('/')
-      return
-    }
-
-    const conversation = makeConversation()
-
-    setConversations((previous) => [
-      conversation,
-      ...previous,
-    ])
-    setActiveId(conversation.id)
-    setMobileOpen(false)
-    navigate('/')
-  }
-
-  function selectChat(chatId) {
-    const exists = conversations.some(
-      (conversation) => conversation.id === chatId
-    )
-
-    if (!exists) return
-
-    setActiveId(chatId)
-    setMobileOpen(false)
-    navigate('/')
-  }
-
-  function setActiveMessages(updater) {
-    setConversations((previous) =>
-      previous.map((conversation) => {
-        if (conversation.id !== activeId) {
-          return conversation
-        }
-
-        const newMessages =
-          typeof updater === 'function'
-            ? updater(conversation.messages)
-            : updater
-
-        const safeMessages = Array.isArray(newMessages)
-          ? newMessages
-          : []
-
-        let title = conversation.title
-
-        if (
-          conversation.title === 'New chat' &&
-          safeMessages.length > 0
-        ) {
-          const firstMessage = safeMessages[0]?.content
-
-          if (
-            typeof firstMessage === 'string' &&
-            firstMessage.trim()
-          ) {
-            title = firstMessage
-              .trim()
-              .replace(/\s+/g, ' ')
-              .slice(0, 42)
-          }
-        }
-
-        return {
-          ...conversation,
-          messages: safeMessages,
-          title,
-        }
-      })
-    )
-  }
-
-  function resetAssistantChats() {
-    if (!licensedMode) return
-
-    const first = makeConversation()
-    setConversations([first])
-    setActiveId(first.id)
-  }
+  function newChat() { history.newChat(); setMobileOpen(false); navigate('/') }
+  function selectChat(id) { history.selectChat(id).catch(e => history.setError(e.message)); setMobileOpen(false); navigate('/') }
+  function resetAssistantChats() { history.newChat() }
 
   function switchAssistantUser(message = '') {
     setAssistantSession(null)
@@ -334,6 +152,7 @@ export default function AppShell({ licensedMode = false }) {
         )}
 
         <Sidebar
+          history={history}
           collapsed={collapsed}
           onToggle={() => setCollapsed((value) => !value)}
           mobileOpen={mobileOpen}
@@ -457,6 +276,7 @@ export default function AppShell({ licensedMode = false }) {
                     activeConversation?.id ?? null,
                   messages:
                     activeConversation?.messages ?? [],
+                  history,
                   setMessages: setActiveMessages,
                   assistantSession,
                   switchAssistantUser,

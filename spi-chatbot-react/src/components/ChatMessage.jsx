@@ -1,3 +1,4 @@
+import EscalationActions from './EscalationActions.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { Copy, Check, Download, RotateCcw, ThumbsUp, ThumbsDown, Languages, Loader2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
@@ -12,7 +13,7 @@ function formatTime(date) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-export default function ChatMessage({ attachment, role, content, trace, sources, timestamp, onRegenerate, isLast, language, translation }) {
+export default function ChatMessage({ messageId, onEdit, attachment, role, content, trace, sources, timestamp, onRegenerate, isLast, language, translation }) {
   const [copied, setCopied] = useState(false)
   const [feedback, setFeedback] = useState(null) // 'up' | 'down' | null
   const [attachmentUrl, setAttachmentUrl] = useState('')
@@ -156,6 +157,7 @@ export default function ChatMessage({ attachment, role, content, trace, sources,
             </dialog>
           </>}
           {content}
+          {onEdit && <button type="button" aria-label="Edit question in a new conversation" className="mt-2 block text-xs text-ink-secondary" onClick={onEdit}>Edit question</button>}
         </div>
         {time && <span className="text-[11px] text-ink-secondary/70 mt-1 mr-0.5">{time}</span>}
       </div>
@@ -213,6 +215,8 @@ export default function ChatMessage({ attachment, role, content, trace, sources,
             )}
           </div>
         )}
+
+        <EscalationActions messageId={messageId} />
 
         {/* Always visible on touch devices (no hover); hover-reveal on desktop */}
         <div className="flex items-center gap-1 mt-2.5 pt-2.5 border-t border-border md:opacity-0 md:group-hover:opacity-100 transition-opacity">

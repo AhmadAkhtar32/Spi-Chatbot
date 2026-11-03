@@ -1,3 +1,4 @@
+import { HistoryOlder } from '../components/HistoryTools.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -43,12 +44,14 @@ function greeting() {
 export default function BusinessPage() {
   const {
     conversationId,
+    history,
     messages,
     setMessages,
     assistantSession,
     switchAssistantUser,
   } = useOutletContext()
 
+  useEffect(() => { if (history.scope?.view !== 'business') history.activateScope({view:'business'}) }, [conversationId])
   const [input, setInput] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [suggestionsBusy, setSuggestionsBusy] = useState(false)
@@ -81,6 +84,8 @@ export default function BusinessPage() {
       lockRef.current = false
     }
   }, [contextKey])
+
+  useEffect(() => { setInput(history.draft?.text || '') }, [conversationId,history.draft])
 
   useEffect(() => {
     if (!assistantSession?.token) return
@@ -140,7 +145,7 @@ export default function BusinessPage() {
       top: scrollRef.current.scrollHeight,
       behavior: 'smooth',
     })
-  }, [messages, busy])
+  }, [messages.at(-1)?.id, messages.at(-1)?.content, busy, conversationId])
 
   function clearChat() {
     requestRef.current?.abort()
@@ -148,7 +153,7 @@ export default function BusinessPage() {
     lockRef.current = false
     pageRef.current = null
     setBusy(false)
-    setMessages([])
+    history.newChat()
     setInput('')
   }
 
@@ -190,14 +195,9 @@ export default function BusinessPage() {
     ])
 
     if (plan.clarification) {
-      setMessages((previous) => [
-        ...previous,
-        {
-          role: 'assistant',
-          content: plan.clarification,
-          timestamp: Date.now(),
-        },
-      ])
+      lockRef.current=true;setBusy(true);history.busy.current++
+      try { const saved=await history.saveNotice(text,plan.clarification);setMessages(previous=>[...previous,{role:'assistant',content:saved.reply,timestamp:Date.now()}]);history.markResponse(saved) }
+      catch(e){history.setError(e.message)}finally{history.busy.current=Math.max(0,history.busy.current-1);lockRef.current=false;setBusy(false)}
       return
     }
 
@@ -213,11 +213,14 @@ export default function BusinessPage() {
       30000
     )
 
+    history.busy.current++
     try {
+      const historyHeaders = await history.prepare({view:'business'},text)
       const response = await fetch(
         `${API_BASE}${plan.path}`,
         {
           headers: {
+            ...historyHeaders,
             Authorization: `Bearer ${assistantSession.token}`,
           },
           cache: 'no-store',
@@ -290,6 +293,7 @@ export default function BusinessPage() {
           timestamp: Date.now(),
         },
       ])
+      history.markResponse(result)
     } catch (error) {
       if (
         contextRef.current !== key
@@ -312,6 +316,7 @@ export default function BusinessPage() {
         },
       ])
     } finally {
+      history.busy.current=Math.max(0,history.busy.current-1)
       clearTimeout(timer)
 
       if (requestRef.current === controller) {
@@ -416,9 +421,10 @@ export default function BusinessPage() {
           className="flex-1 overflow-y-auto relative z-10"
         >
           <div className="max-w-3xl mx-auto px-6 py-6 flex flex-col gap-4">
+            <HistoryOlder history={history} />
             {messages.map((message, index) => (
-              <ChatMessage
-                key={index}
+              <ChatMessage messageId={message.id} onEdit={message.id && message.role === 'user' ? () => history.edit(message.id).catch(e => history.setError(e.message)) : undefined}
+                key={message.id || index}
                 role={message.role}
                 content={message.content}
                 timestamp={message.timestamp}
