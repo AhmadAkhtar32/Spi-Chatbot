@@ -8,6 +8,10 @@ from spia.api.access import bearer_token, context_for_token
 
 
 def install_request_guard(app):
+    # SPIA_HISTORY_CAPTURE_V1
+    from spia.api.history import install_history
+    install_history(app)
+
     @app.middleware("http")
     async def guard_requests(request: Request, call_next):
         path = request.url.path
@@ -80,3 +84,8 @@ def install_request_guard(app):
 
         response.headers["Cache-Control"] = "no-store"
         return response
+
+    # SPIA_HISTORY_CORS_V1
+    from fastapi.middleware.cors import CORSMiddleware
+    cors = [entry for entry in app.user_middleware if entry.cls is CORSMiddleware]
+    app.user_middleware[:] = cors + [entry for entry in app.user_middleware if entry.cls is not CORSMiddleware]
