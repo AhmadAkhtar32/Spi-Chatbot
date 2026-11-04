@@ -1,3 +1,5 @@
+import DocumentAttachment from './DocumentAttachment.jsx'
+import FeedbackButtons from './FeedbackButtons.jsx'
 import EscalationActions from './EscalationActions.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { Copy, Check, Download, RotateCcw, ThumbsUp, ThumbsDown, Languages, Loader2 } from 'lucide-react'
@@ -15,11 +17,10 @@ function formatTime(date) {
 
 export default function ChatMessage({ messageId, onEdit, attachment, role, content, trace, sources, timestamp, onRegenerate, isLast, language, translation }) {
   const [copied, setCopied] = useState(false)
-  const [feedback, setFeedback] = useState(null) // 'up' | 'down' | null
   const [attachmentUrl, setAttachmentUrl] = useState('')
   const attachmentDialog = useRef(null)
   useEffect(() => {
-    if (!(attachment instanceof Blob)) { setAttachmentUrl(''); return }
+    if (!(attachment instanceof Blob) || !attachment.type.startsWith('image/')) { setAttachmentUrl(''); return }
     const url = URL.createObjectURL(attachment)
     setAttachmentUrl(url)
     return () => URL.revokeObjectURL(url)
@@ -140,6 +141,7 @@ export default function ChatMessage({ messageId, onEdit, attachment, role, conte
     return (
       <div className="flex flex-col items-end animate-fade-in min-w-0">
         <div dir="auto" style={originalLanguage === 'ur' ? { fontFamily: '"Noto Naskh Arabic", "Segoe UI", Tahoma, Arial, sans-serif', fontSize: '16px', lineHeight: 1.9 } : undefined} className="max-w-[88%] sm:max-w-[75%] min-w-0 bg-primary/8 border border-primary/15 rounded-lg px-3.5 sm:px-4 py-2.5 text-[14px] text-ink whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+          {attachment && (!(attachment instanceof Blob) || !attachment.type.startsWith('image/')) && <DocumentAttachment attachment={attachment} />}
           {attachmentUrl && <>
             <button type="button" onClick={() => attachmentDialog.current?.showModal()}
               aria-label="View attached screenshot" className="block mb-2 max-w-full text-start">
@@ -219,7 +221,7 @@ export default function ChatMessage({ messageId, onEdit, attachment, role, conte
         <EscalationActions messageId={messageId} />
 
         {/* Always visible on touch devices (no hover); hover-reveal on desktop */}
-        <div className="flex items-center gap-1 mt-2.5 pt-2.5 border-t border-border md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+        <div className="spia-message-actions flex items-center gap-1 mt-2.5 pt-2.5 border-t border-border md:opacity-0 md:group-hover:opacity-100 transition-opacity">
           <MiniButton onClick={handleCopy} title="Copy response">
             {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
           </MiniButton>
@@ -232,12 +234,7 @@ export default function ChatMessage({ messageId, onEdit, attachment, role, conte
             </MiniButton>
           )}
           <span className="w-px h-3.5 bg-border mx-0.5" />
-          <MiniButton onClick={() => setFeedback(feedback === 'up' ? null : 'up')} title="Good response">
-            <ThumbsUp className={`w-3.5 h-3.5 ${feedback === 'up' ? 'text-primary' : ''}`} />
-          </MiniButton>
-          <MiniButton onClick={() => setFeedback(feedback === 'down' ? null : 'down')} title="Poor response">
-            <ThumbsDown className={`w-3.5 h-3.5 ${feedback === 'down' ? 'text-danger' : ''}`} />
-          </MiniButton>
+          <FeedbackButtons messageId={messageId} />
         </div>
       </div>
       {time && <span className="text-[11px] text-ink-secondary/70 mt-1 ml-0.5">{time}</span>}

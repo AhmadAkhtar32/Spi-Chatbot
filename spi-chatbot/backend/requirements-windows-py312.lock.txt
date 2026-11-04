@@ -83,3 +83,4 @@ watchfiles==1.2.0
 websockets==16.1.1
 win32_setctime==1.2.0
 Pillow==12.3.0
+pypdf>=6.10.0,<7

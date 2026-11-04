@@ -703,3 +703,8 @@ select {
   direction: ltr;
   text-align: left;
 }
+
+/* Keep selected feedback visible after the pointer leaves the message. */
+.spia-message-actions:has(button[aria-pressed="true"]) {
+  opacity: 1;
+}

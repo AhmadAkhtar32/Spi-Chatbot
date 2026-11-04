@@ -47,6 +47,8 @@ from spia.api.history_pins import router as history_pins_router
 app.include_router(history_pins_router)
 from spia.api.escalations import router as escalation_router
 app.include_router(escalation_router)
+from spia.api.feedback import router as feedback_router
+app.include_router(feedback_router)
 app.include_router(access_router)
 app.include_router(business_router)
 app.include_router(expert_router)

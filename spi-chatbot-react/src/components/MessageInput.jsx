@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowUp, Paperclip, Mic, Square, Loader2, X } from 'lucide-react'
+import { ArrowUp, Paperclip, Mic, Square, Loader2, X, FileText } from 'lucide-react'
 import { API_BASE } from '../api/client.js'
 
 export default function MessageInput({
@@ -40,7 +40,7 @@ export default function MessageInput({
   }, [phase, disabled])
 
   useEffect(() => {
-    if (!imageFile) { setImagePreview(''); return }
+    if (!imageFile || !imageFile.type.startsWith('image/')) { setImagePreview(''); return }
     const url = URL.createObjectURL(imageFile)
     setImagePreview(url)
     return () => URL.revokeObjectURL(url)
@@ -52,11 +52,15 @@ export default function MessageInput({
     if (!file || busy || disabled || !imageEnabled) return
     setVoiceError('')
     setVoiceNotice('')
-    if (!['image/png', 'image/jpeg'].includes(file.type) || !file.size || file.size > 2 * 1024 * 1024) {
-      setVoiceError('Choose one PNG or JPEG screenshot, up to 2 MiB.')
+    const extension = file.name.split('.').pop()?.toLowerCase()
+    if (extension === 'doc') { setVoiceError('Save the older .doc file as .docx, then attach it.'); return }
+    const types = {png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',pdf:'application/pdf',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
+    const expected = types[extension]
+    if (!expected || !file.size || file.size > 2 * 1024 * 1024 || (file.type && !['application/octet-stream',expected,...(extension==='docx'?['application/zip']:[])].includes(file.type))) {
+      setVoiceError('Choose one PDF, .docx, PNG, JPG or JPEG file, up to 2 MiB.')
       return
     }
-    setImageFile(file)
+    setImageFile(file.type===expected?file:new File([file],file.name,{type:expected,lastModified:file.lastModified}))
   }
 
   async function dispatchQuestion(question) {
@@ -69,7 +73,7 @@ export default function MessageInput({
       if (!voice.current.active) return
       if (sent === false) {
         setText(question)
-        setVoiceError('Screenshot request failed. Your image and question are kept for retry.')
+        setVoiceError('Attachment request failed. Your file and question are kept for retry.')
       } else {
         setImageFile(current => current === selected ? null : current)
         setText('')
@@ -396,7 +400,7 @@ export default function MessageInput({
     if (disabled) return
     if (phase === 'recording') return finishRecording(true)
     if (phase !== 'idle' || (!text.trim() && !imageFile)) return
-    dispatchQuestion(text.trim() || 'Explain this ERP screen or error in English.')
+    dispatchQuestion(text.trim() || (imageFile?.type.startsWith('image/') ? 'Explain this ERP screen or error in English.' : 'Summarize this document in English.'))
   }
 
   return (
@@ -404,16 +408,16 @@ export default function MessageInput({
       className="shrink-0 border-t border-border bg-surface px-4 sm:px-6 py-3 outline-none">
       <div className="max-w-3xl mx-auto">
         {imageFile && <div className="mb-2 flex items-center gap-3 rounded-xl border border-border bg-bg p-2">
-          <img src={imagePreview || undefined} alt="Selected screenshot" className="h-14 w-14 rounded-lg border border-border object-cover"
-            onError={() => { setImageFile(null); setVoiceError('The screenshot could not be opened. Choose another PNG or JPEG.') }} />
+          {imageFile.type.startsWith('image/') ? <img src={imagePreview || undefined} alt="Selected screenshot" className="h-14 w-14 rounded-lg border border-border object-cover"
+            onError={() => { setImageFile(null); setVoiceError('The screenshot could not be opened. Choose another PNG or JPEG.') }} /> : <FileText className="h-10 w-10 shrink-0 text-primary" />}
           <div className="min-w-0 flex-1 text-xs text-ink-secondary">
-            <p className="font-medium text-ink">Screenshot attached</p>
+            <p className="font-medium text-ink break-words">{imageFile.name || 'Attachment'}</p>
             <p>{Math.ceil(imageFile.size / 1024)} KB · sent only when you press Send</p>
           </div>
           <button type="button" onClick={() => setImageFile(null)} disabled={busy || disabled}
-            aria-label="Remove screenshot" className="p-2 text-ink-secondary hover:text-danger disabled:opacity-40"><X className="h-4 w-4" /></button>
+            aria-label="Remove attachment" className="p-2 text-ink-secondary hover:text-danger disabled:opacity-40"><X className="h-4 w-4" /></button>
         </div>}
-        <input ref={imagePicker} type="file" accept="image/png,image/jpeg" onChange={chooseImage} className="hidden" aria-label="Choose screenshot file" />
+        <input ref={imagePicker} type="file" accept=".pdf,.docx,.png,.jpg,.jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg" onChange={chooseImage} className="hidden" aria-label="Choose PDF, Word document or screenshot" />
         <div data-spia-input-row data-recording={busy ? 'true' : 'false'}>
           {busy && <button data-spia-voice-cancel type="button" onClick={cancelVoice}
             aria-label="Cancel voice input" title="Cancel voice input (Esc)">
@@ -421,7 +425,7 @@ export default function MessageInput({
           </button>}
           {!busy && (imageEnabled || showAttachments) && <button data-spia-attachment type="button" style={{ order: -1 }} disabled={!imageEnabled || disabled}
             onClick={() => imagePicker.current?.click()}
-            title="Attach one PNG or JPEG screenshot, up to 2 MiB" aria-label="Attach screenshot">
+            title="Attach one PDF, .docx, PNG, JPG or JPEG file, up to 2 MiB" aria-label="Attach file">
             <Paperclip className="h-5 w-5" />
           </button>}
           <div data-spia-editor>

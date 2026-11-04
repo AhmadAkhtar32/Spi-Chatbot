@@ -116,6 +116,8 @@ def connection(write=False):
             fail(503, "Unsupported history database version")
         if version == 0:
             db.executescript(SCHEMA)
+        from spia.services import chat_files
+        db.execute(chat_files.SCHEMA)
         if os.name != "nt":
             path.chmod(0o600)
         if write:
@@ -280,6 +282,10 @@ def messages(context, conversation_id, after=-1, page_size=50, *, before=None):
                 item["payload"] = payload
             if msg["image"]:
                 item["image_base64"] = base64.b64encode(msg["image"]).decode()
+            from spia.services.chat_files import metadata
+            attachment = metadata(db, msg["id"], conversation_id)
+            if attachment:
+                item["attachment"] = attachment
             data.append(item)
         authorize(context, row)
         return {"conversation": summary(row), "messages": data,
@@ -304,6 +310,7 @@ def delete(context, conversation_id):
         row = row_for(db, context, conversation_id, True)
         now = int(time.time()*1000)
         db.execute("UPDATE chat_master SET deleted_at=COALESCE(deleted_at,?),updated_at=?,revision=revision+1 WHERE id=?", (now, now, row["id"]))
+        db.execute("DELETE FROM chat_attachment WHERE message_id IN (SELECT id FROM chat_message WHERE conversation_id=?)", (conversation_id,))
 
 
 def fork(context, conversation_id, message_id, title="Edited question"):
@@ -322,11 +329,15 @@ def fork(context, conversation_id, message_id, title="Edited question"):
         hint = json.loads(answer[0]).get("history_source") if answer and answer[0] else None
         new_id = str(uuid.uuid4())
         _insert(db, context, new_id, json.loads(row["scope"]), row["guard"], title.strip())
+        from spia.services import chat_files
         for n, old in enumerate(earlier):
-            db.execute("INSERT INTO chat_message VALUES(?,?,?,?,?,?,?,?)", (str(uuid.uuid4()), new_id, n, old["role"], old["content"], old["payload"], old["image"], old["created_at"]))
+            new_message_id = str(uuid.uuid4())
+            db.execute("INSERT INTO chat_message VALUES(?,?,?,?,?,?,?,?)", (new_message_id, new_id, n, old["role"], old["content"], old["payload"], old["image"], old["created_at"]))
+            chat_files.copy(db, context, old["id"], new_message_id)
         db.execute("UPDATE chat_master SET next_turn=?,parent_id=?,parent_message_id=? WHERE id=?", (len(earlier)//2, conversation_id, message_id, new_id))
         return {"conversation": summary(row_for(db, context, new_id)), "draft": msg["content"],
-                "image_base64": base64.b64encode(msg["image"]).decode() if msg["image"] else None, "source": hint}
+                "image_base64": base64.b64encode(msg["image"]).decode() if msg["image"] else None, "source": hint,
+                "attachment": chat_files.metadata(db, msg["id"], conversation_id)}
 
 
 def claim(context, conversation_id, request_id, fingerprint):
@@ -350,7 +361,7 @@ def claim(context, conversation_id, request_id, fingerprint):
         return row, None
 
 
-def finish(context, conversation_id, request_id, question, payload, image=None, http_status=200):
+def finish(context, conversation_id, request_id, question, payload, image=None, http_status=200, *, attachment=None):
     if not isinstance(question, str) or not 1 <= len(question.strip()) <= 2000:
         fail(422, "Enter a question of 1 to 2000 characters")
     if not isinstance(payload, dict) or not ("reply" in payload or "kind" in payload):
@@ -368,6 +379,9 @@ def finish(context, conversation_id, request_id, question, payload, image=None, 
                              "answer_sequence": request["turn"]*2+1, "revision": row["revision"]+1}
         db.execute("INSERT INTO chat_message VALUES(?,?,?,?,?,?,?,?)", (user_id, conversation_id, request["turn"]*2, "user", question.strip(), None, image, request["created_at"]))
         db.execute("INSERT INTO chat_message VALUES(?,?,?,?,?,?,?,?)", (answer_id, conversation_id, request["turn"]*2+1, "assistant", payload.get("reply") or encode(payload), encode(payload), None, now))
+        if attachment is not None:
+            from spia.services.chat_files import save
+            save(db, context, user_id, attachment)
         title = " ".join(question.split())[:80] if row["title"] == "New chat" else row["title"]
         db.execute("UPDATE chat_master SET title=?,updated_at=?,revision=revision+1 WHERE id=?", (title, now, conversation_id))
         db.execute("UPDATE chat_request SET state='done',response=? WHERE id=?", (encode({"status": http_status, "body": result}), request_id))

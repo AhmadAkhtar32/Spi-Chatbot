@@ -193,6 +193,8 @@ def export(conversation_id: str, context=Depends(require_access_context)):
 
 
 def route_kind(path, method):
+    if method == "POST" and path == "/api/v1/experts/document-question":
+        return "file"
     if method == "POST" and path in {"/api/v1/experts/support", "/api/v1/experts/implementation",
                                     "/api/v1/experts/project-knowledge", "/api/v1/experts/image-question"}:
         return "image" if path.endswith("/image-question") else "document"
@@ -214,7 +216,7 @@ def check_scope(context, cid, path, query, body, kind):
         matches = scope == {"view": "company"}
     elif scope.get("view") != "knowledge":
         matches = False
-    elif kind == "image":
+    elif kind in {"image", "file"}:
         params = parse_qs(query.decode("ascii"))
         matches = params.get("expert") == [scope["expert"]+"_expert"] and params.get("module") == [scope["module"]]
     else:
@@ -307,10 +309,10 @@ class HistoryCapture:
             query = scope.get("query_string", b"")
             if len(query) > 8192:
                 history.fail(422, "Request query exceeds limits")
-            raw, body, image = bytearray(), {}, None
+            raw, body, image, attachment = bytearray(), {}, None, None
             original_receive = receive
             if scope["method"] == "POST":
-                raw = await read_limited(original_receive, 2*1024*1024 if kind == "image" else 8192)
+                raw = await read_limited(original_receive, 2*1024*1024 if kind in {"image", "file"} else 8192)
                 if raw is None:
                     return
                 if kind == "document":
@@ -322,7 +324,7 @@ class HistoryCapture:
                     encoded = headers.get(b"x-spia-question")
                     if encoded is not None and len(encoded) > 6000:
                         history.fail(422, "Question header exceeds limits")
-                    question = base64.b64decode(encoded, validate=True).decode("utf-8") if encoded is not None else "Explain this ERP screen or error in English."
+                    question = base64.b64decode(encoded, validate=True).decode("utf-8") if encoded is not None else ("Summarize this document in English." if kind == "file" else "Explain this ERP screen or error in English.")
                 first = True
                 async def replay():
                     nonlocal first
@@ -344,6 +346,12 @@ class HistoryCapture:
                 if media_type not in {"image/png", "image/jpeg"}:
                     history.fail(415, "Upload one PNG or JPEG screenshot")
                 image = await run_in_threadpool(clean_image, bytes(raw), media_type)
+            if kind == "file":
+                from spia.services.chat_files import upload
+                params = parse_qs(query.decode("ascii"))
+                if set(params) != {"expert", "module", "filename"} or any(len(v) != 1 for v in params.values()):
+                    history.fail(422, "Supply expert, module and filename once each")
+                attachment = upload(bytes(raw), media_type, params["filename"][0])
             fingerprint = hashlib.sha256(history.encode({"method": scope["method"], "path": scope["path"],
                 "query": base64.b64encode(query).decode(), "body": hashlib.sha256(raw).hexdigest(),
                 "question": question, "media_type": media_type}).encode()).hexdigest()
@@ -381,7 +389,7 @@ class HistoryCapture:
                     history.fail(503, "Unexpected conversation response")
                 if body.get("source"):
                     original["history_source"] = body["source"]
-                result = await run_in_threadpool(history.finish, context, cid, rid, question.strip(), original, image)
+                result = await run_in_threadpool(history.finish, context, cid, rid, question.strip(), original, image, attachment=attachment)
             elif 400 <= status_code < 600:
                 from spia.integrations.groq import question_language
                 notice = {"reply": f"The request could not be completed (HTTP {status_code}). Please check the request or try again.",
@@ -431,3 +439,14 @@ def install_history(app):
                     headers.append(name)
             entry.kwargs["allow_headers"] = headers
     app.state.spia_history_installed = True
+
+# SPIA_PRIVATE_DOCUMENT_DOWNLOAD_V1
+@router.get("/{conversation_id}/attachments/{message_id}")
+def attachment_download(conversation_id: str, message_id: str, context=Depends(require_access_context)):
+    from urllib.parse import quote
+    from spia.services.chat_files import download
+    item = run(lambda: download(context, conversation_id, message_id))
+    return Response(item["content"], media_type=item["media_type"], headers={
+        "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+        "Content-Disposition": "attachment; filename*=UTF-8''" + quote(item["filename"], safe=""),
+    })

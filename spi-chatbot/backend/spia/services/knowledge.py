@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
-
 from spia.services import retrieval as rag
 
 KNOWLEDGE_DIR = BACKEND_DIR / "knowledge"

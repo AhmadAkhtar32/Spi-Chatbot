@@ -342,6 +342,7 @@ export default function UnifiedChatPage({
     }
 
     if (image && !licensedMode) return false
+    const isDocument = image && !image.type.startsWith('image/')
     const imageController = image ? new AbortController() : null
     if (imageController) imageRequest.current = imageController
     const imageTimeout = imageController ? setTimeout(() => imageController.abort(), 95000) : null
@@ -366,7 +367,7 @@ export default function UnifiedChatPage({
     try {
       const historyHeaders = await history.prepare({view:'knowledge',expert:EXPERT_ROUTES[selectedExpert],module:selectedModule},text)
       const response = image
-        ? await fetch(`${API_BASE}/api/v1/experts/image-question?${new URLSearchParams({ expert: selectedExpert, module: selectedModule })}`, {
+        ? await fetch(`${API_BASE}/api/v1/experts/${isDocument?'document-question':'image-question'}?${new URLSearchParams({ expert: selectedExpert, module: selectedModule, ...(isDocument?{filename:image.name}:{}) })}`, {
             method: 'POST', cache: 'no-store', signal: imageController.signal,
             headers: { ...historyHeaders, Authorization: `Bearer ${tokenAtSend}`, 'Content-Type': image.type, 'X-SPIA-Question': btoa(String.fromCharCode(...new TextEncoder().encode(text))) }, body: image,
           })
@@ -435,7 +436,7 @@ export default function UnifiedChatPage({
 
       if (image && !response.ok && response.status !== 401) {
         const failure = await response.json().catch(() => ({}))
-        throw new Error(typeof failure.detail === 'string' ? failure.detail : `Screenshot request failed (${response.status}).`)
+        throw new Error(typeof failure.detail === 'string' ? failure.detail : `Attachment request failed (${response.status}).`)
       }
       if (!response.ok) {
         if (

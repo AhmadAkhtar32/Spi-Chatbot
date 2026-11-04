@@ -20,7 +20,7 @@ function convert(row,scope){
     ...row,
     timestamp:row.created_at,
     content:p.kind?businessAnswer(p):p.reply||row.content,
-    attachment:picture(row.image_base64),
+    attachment:row.attachment||picture(row.image_base64),
     language:p.language,
     sources:(p.sources||[]).map(s=>p.source_labels?.[s]||s),
     raw_sources:p.sources||[],
@@ -308,6 +308,17 @@ export default function usePersonalHistory(session,expire){
       method:'POST',
       body:JSON.stringify({message_id:messageId}),
     })
+    let attachment = null
+    if (data.attachment) {
+      const controller = new AbortController(), timer = setTimeout(()=>controller.abort(),20000)
+      try {
+        const meta=data.attachment
+        const response=await fetch(`${API_BASE}/api/v1/conversations/${meta.conversation_id}/attachments/${meta.message_id}`,{cache:'no-store',signal:controller.signal,headers:{Authorization:`Bearer ${boundToken}`}})
+        if(!response.ok)throw new Error('The original document is unavailable. Reattach it to edit this question.')
+        attachment=new File([await response.blob()],meta.filename,{type:meta.media_type})
+      } finally {clearTimeout(timer)}
+    }
+    if(live.current.token!==boundToken)throw new Error('Session changed.')
     const chat={...data.conversation,messages:[],saved:true}
     epoch.current++
     live.current.active=chat.id
@@ -316,7 +327,7 @@ export default function usePersonalHistory(session,expire){
     await load(chat.id)
     setDraft({
       text:data.draft,
-      image:picture(data.image_base64),
+      image:attachment||picture(data.image_base64),
       source:data.source,
     })
   }
