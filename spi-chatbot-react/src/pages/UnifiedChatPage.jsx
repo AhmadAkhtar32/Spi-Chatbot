@@ -10,6 +10,26 @@ import SuggestionChip from '../components/SuggestionChip.jsx'
 import AnimatedBackground from '../components/AnimatedBackground.jsx'
 import { API_BASE } from '../api/client.js'
 
+function hostedDemoLimitMessage(userId) {
+  if (window.location.hostname !== 'spi-chatbot-rh2r.vercel.app') return null
+
+  try {
+    const minute = Math.floor(Date.now() / 60000)
+    const key = `spia:demo-question-limit:${userId}`
+    const saved = JSON.parse(localStorage.getItem(key) || 'null')
+    const count = saved?.minute === minute ? saved.count : 0
+
+    if (count >= 3) {
+      return 'Demo limit reached: 3 questions per minute. Try again next minute.'
+    }
+
+    localStorage.setItem(key, JSON.stringify({ minute, count: count + 1 }))
+    return null
+  } catch {
+    return 'Please enable browser site storage to send questions in this demo.'
+  }
+}
+
 function getGreeting() {
   const hour = new Date().getHours()
   if (hour < 12) return 'Good morning'
@@ -162,7 +182,7 @@ export default function UnifiedChatPage({ licensedMode = false }) {
       signal: controller.signal,
       headers: { Authorization: `Bearer ${assistantSession.token}` },
     })
-      .then(async (response) => {
+      .then(async response => {
         if (response.status === 401) {
           switchAssistantUser('Sample session expired. Enter the presenter PIN again.')
           return null
@@ -178,12 +198,12 @@ export default function UnifiedChatPage({ licensedMode = false }) {
 
         return response.json()
       })
-      .then((data) => {
+      .then(data => {
         if (!controller.signal.aborted && data) {
           setExpertSuggestions(data.suggestions || [])
         }
       })
-      .catch((error) => {
+      .catch(error => {
         if (!controller.signal.aborted) {
           setSuggestionsError(error.message || 'Could not load suggestions.')
         }
@@ -276,6 +296,22 @@ export default function UnifiedChatPage({ licensedMode = false }) {
     }
 
     if (image && !licensedMode) return false
+
+    if (licensedMode && assistantSession?.user?.id) {
+      const limitMessage = hostedDemoLimitMessage(assistantSession.user.id)
+      if (limitMessage) {
+        setMessages(previous => {
+          if (previous.at(-1)?.content === limitMessage) return previous
+
+          return [...previous, {
+            role: 'assistant',
+            content: limitMessage,
+            timestamp: Date.now(),
+          }]
+        })
+        return false
+      }
+    }
 
     const isDocument = image && !image.type.startsWith('image/')
     const imageController = image ? new AbortController() : null
