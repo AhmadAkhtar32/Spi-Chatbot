@@ -1,16 +1,8 @@
-import { HistoryOlder } from '../components/HistoryTools.jsx'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import {
-  FileText,
-  BookOpen,
-  BarChart3,
-  Copy,
-  RotateCcw,
-  AlertCircle,
-} from 'lucide-react'
-
+import { FileText, BookOpen, BarChart3, Copy, RotateCcw, AlertCircle } from 'lucide-react'
+import { HistoryOlder } from '../components/HistoryTools.jsx'
 import ChatMessage from '../components/ChatMessage.jsx'
 import TypingIndicator from '../components/TypingIndicator.jsx'
 import MessageInput from '../components/MessageInput.jsx'
@@ -20,7 +12,6 @@ import { API_BASE } from '../api/client.js'
 
 function getGreeting() {
   const hour = new Date().getHours()
-
   if (hour < 12) return 'Good morning'
   if (hour < 17) return 'Good afternoon'
   return 'Good evening'
@@ -57,8 +48,7 @@ const LEGACY_SUGGESTIONS = [
     category: 'Chart of Accounts',
     label: 'Manage account codes',
     description: 'Learn the account code length and structure.',
-    prompt:
-      'What is the maximum length of an account code in the Chart of Accounts?',
+    prompt: 'What is the maximum length of an account code in the Chart of Accounts?',
   },
   {
     module: 'financials',
@@ -66,8 +56,7 @@ const LEGACY_SUGGESTIONS = [
     category: 'Vouchers',
     label: 'Save default vouchers',
     description: 'Create reusable templates for repeated entries.',
-    prompt:
-      'How do I save a voucher as a default voucher for repeated entries?',
+    prompt: 'How do I save a voucher as a default voucher for repeated entries?',
   },
   {
     module: 'financials',
@@ -75,8 +64,7 @@ const LEGACY_SUGGESTIONS = [
     category: 'Reversals',
     label: 'Reverse a posted voucher',
     description: 'Correct a voucher that was posted by mistake.',
-    prompt:
-      'A voucher was posted by mistake — can it be reversed, and how?',
+    prompt: 'A voucher was posted by mistake — can it be reversed, and how?',
   },
   {
     module: 'financials',
@@ -84,8 +72,7 @@ const LEGACY_SUGGESTIONS = [
     category: 'Performance',
     label: 'Month-end slowness',
     description: 'Troubleshoot performance during month-end close.',
-    prompt:
-      'Why does SPI slow down specifically during month-end close?',
+    prompt: 'Why does SPI slow down specifically during month-end close?',
   },
   {
     module: 'financials',
@@ -93,21 +80,17 @@ const LEGACY_SUGGESTIONS = [
     category: 'Reports',
     label: 'Blank report results',
     description: 'Diagnose reports that return no visible data.',
-    prompt:
-      'Why would a report return blank results even though data clearly exists?',
+    prompt: 'Why would a report return blank results even though data clearly exists?',
   },
 ]
 
-export default function UnifiedChatPage({
-  licensedMode = false,
-}) {
+export default function UnifiedChatPage({ licensedMode = false }) {
   const {
     conversationId,
     messages,
     setMessages,
     assistantSession,
     switchAssistantUser,
-    resetAssistantChats,
     history,
     scrollHeaders,
     setScrollHeaders,
@@ -115,51 +98,56 @@ export default function UnifiedChatPage({
 
   const [loading, setLoading] = useState(false)
   const [inputValue, setInputValue] = useState('')
-  const selectedExpert = history.scope?.view === 'knowledge' ? history.scope.expert+'_expert' : assistantSession?.user.experts?.find(name => EXPERT_ROUTES[name]) || ''
-  const selectedModule = history.scope?.view === 'knowledge' ? history.scope.module : assistantSession?.user.modules?.[0] || ''
-  useEffect(() => {
-    if (selectedExpert && selectedModule && history.scope?.view !== 'knowledge') history.activateScope({view:'knowledge',expert:selectedExpert.replace('_expert',''),module:selectedModule})
-  }, [selectedExpert, selectedModule, conversationId])
-  useEffect(() => { setInputValue(history.draft?.text || '') }, [conversationId, history.draft])
+  const [expertSuggestions, setExpertSuggestions] = useState([])
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false)
+  const [suggestionsError, setSuggestionsError] = useState('')
 
-  const [expertSuggestions, setExpertSuggestions] =
-    useState([])
+  const selectedExpert = history.scope?.view === 'knowledge'
+    ? `${history.scope.expert}_expert`
+    : assistantSession?.user.experts?.find(name => EXPERT_ROUTES[name]) || ''
 
-  const [suggestionsLoading, setSuggestionsLoading] =
-    useState(false)
-
-  const [suggestionsError, setSuggestionsError] =
-    useState('')
+  const selectedModule = history.scope?.view === 'knowledge'
+    ? history.scope.module
+    : assistantSession?.user.modules?.[0] || ''
 
   const identityHeaderRef = useRef(null)
   const tabsHeaderRef = useRef(null)
   const scrollRef = useRef(null)
   const imageRequest = useRef(null)
-  useEffect(() => () => imageRequest.current?.abort(), [conversationId, selectedExpert, selectedModule, assistantSession?.token])
   const activeTokenRef = useRef(assistantSession?.token)
-
   activeTokenRef.current = assistantSession?.token
 
   useEffect(() => {
-    activeTokenRef.current = assistantSession?.token
+    if (selectedExpert && selectedModule && history.scope?.view !== 'knowledge') {
+      history.activateScope({
+        view: 'knowledge',
+        expert: selectedExpert.replace('_expert', ''),
+        module: selectedModule,
+      })
+    }
+  }, [selectedExpert, selectedModule, conversationId])
 
+  useEffect(() => {
+    setInputValue(history.draft?.text || '')
+  }, [conversationId, history.draft])
+
+  useEffect(() => {
+    return () => imageRequest.current?.abort()
+  }, [conversationId, selectedExpert, selectedModule, assistantSession?.token])
+
+  useEffect(() => {
+    activeTokenRef.current = assistantSession?.token
     return () => {
       activeTokenRef.current = null
     }
   }, [assistantSession?.token])
 
   useEffect(() => {
-    if (
-      !licensedMode ||
-      !assistantSession?.token ||
-      !selectedExpert ||
-      !selectedModule
-    ) {
+    if (!licensedMode || !assistantSession?.token || !selectedExpert || !selectedModule) {
       return
     }
 
     const controller = new AbortController()
-
     setExpertSuggestions([])
     setSuggestionsError('')
     setSuggestionsLoading(true)
@@ -169,55 +157,35 @@ export default function UnifiedChatPage({
       module: selectedModule,
     })
 
-    fetch(
-      `${API_BASE}/api/v1/experts/suggestions?${query}`,
-      {
-        cache: 'no-store',
-        signal: controller.signal,
-        headers: {
-          Authorization:
-            `Bearer ${assistantSession.token}`,
-        },
-      }
-    )
+    fetch(`${API_BASE}/api/v1/experts/suggestions?${query}`, {
+      cache: 'no-store',
+      signal: controller.signal,
+      headers: { Authorization: `Bearer ${assistantSession.token}` },
+    })
       .then(async (response) => {
         if (response.status === 401) {
-          switchAssistantUser(
-            'Sample session expired. Enter the presenter PIN again.'
-          )
+          switchAssistantUser('Sample session expired. Enter the presenter PIN again.')
           return null
         }
 
         if (response.status === 403) {
-          throw new Error(
-            'Suggestions are not licensed for this expert or module.'
-          )
+          throw new Error('Suggestions are not licensed for this expert or module.')
         }
 
         if (!response.ok) {
-          throw new Error(
-            `Could not load suggestions (${response.status}).`
-          )
+          throw new Error(`Could not load suggestions (${response.status}).`)
         }
 
         return response.json()
       })
       .then((data) => {
-        if (
-          !controller.signal.aborted &&
-          data
-        ) {
-          setExpertSuggestions(
-            data.suggestions || []
-          )
+        if (!controller.signal.aborted && data) {
+          setExpertSuggestions(data.suggestions || [])
         }
       })
       .catch((error) => {
         if (!controller.signal.aborted) {
-          setSuggestionsError(
-            error.message ||
-            'Could not load suggestions.'
-          )
+          setSuggestionsError(error.message || 'Could not load suggestions.')
         }
       })
       .finally(() => {
@@ -227,62 +195,35 @@ export default function UnifiedChatPage({
       })
 
     return () => controller.abort()
-  }, [
-    licensedMode,
-    assistantSession?.token,
-    selectedExpert,
-    selectedModule,
-    conversationId,
-  ])
+  }, [licensedMode, assistantSession?.token, selectedExpert, selectedModule, conversationId])
 
-  const allowedExperts =
-    assistantSession?.user.experts?.filter(
-      (name) => EXPERT_ROUTES[name]
-    ) || []
-
+  const allowedExperts = assistantSession?.user.experts?.filter(name => EXPERT_ROUTES[name]) || []
   const allowedModules = licensedMode
     ? assistantSession?.user.modules || []
     : LICENSED_MODULES
 
+  const moduleLabel = MODULE_LABELS[selectedModule] || selectedModule
+  const icons = [FileText, BookOpen, BarChart3, Copy, RotateCcw, AlertCircle]
   const suggestions = licensedMode
     ? expertSuggestions.map((item, index) => ({
-        icon: [
-          FileText,
-          BookOpen,
-          BarChart3,
-          Copy,
-          RotateCcw,
-          AlertCircle,
-        ][index % 6],
-        category:
-          MODULE_LABELS[selectedModule] ||
-          selectedModule,
+        icon: icons[index % icons.length],
+        category: moduleLabel,
         label: item.question,
         description: `From ${item.source}`,
         prompt: item.question,
         source: item.source,
       }))
-    : LEGACY_SUGGESTIONS.filter((item) =>
-        LICENSED_MODULES.includes(
-          item.module
-        )
-      )
-
-  const moduleLabel =
-    MODULE_LABELS[selectedModule] ||
-    selectedModule
+    : LEGACY_SUGGESTIONS.filter(item => LICENSED_MODULES.includes(item.module))
 
   const subtitle = licensedMode
-    ? `Ask the ${
-        selectedExpert === 'support_expert'
-          ? 'Support'
-          : 'Implementation'
-      } Expert about ${moduleLabel}. Answers use approved sample documents.`
+    ? `Ask the ${selectedExpert === 'support_expert' ? 'Support' : 'Implementation'} Expert about ${moduleLabel}. Answers use approved sample documents.`
     : 'Ask about setup, usage, and troubleshooting for Financials.'
 
   const placeholder = licensedMode
     ? `Ask about ${moduleLabel}...`
     : 'Ask about Financials...'
+
+  const hasMessages = messages.length > 0
 
   useLayoutEffect(() => {
     if (!licensedMode || !setScrollHeaders) return
@@ -293,7 +234,7 @@ export default function UnifiedChatPage({
     })
 
     return () => setScrollHeaders(null)
-  }, [licensedMode, setScrollHeaders, messages.length === 0])
+  }, [licensedMode, setScrollHeaders, hasMessages])
 
   // Read new replies from their beginning, not their final paragraph.
   useLayoutEffect(() => {
@@ -311,8 +252,8 @@ export default function UnifiedChatPage({
       if (!latest) return
 
       const previous = rows[rows.length - 2]
-      const isReply = latest.dataset.chatRole === 'assistant'
-      const showQuestion = isReply &&
+      const showQuestion =
+        latest.dataset.chatRole === 'assistant' &&
         previous?.dataset.chatRole === 'user' &&
         latest.offsetTop - previous.offsetTop <= viewport.clientHeight * 0.35
 
@@ -329,26 +270,20 @@ export default function UnifiedChatPage({
     if (
       !text?.trim() ||
       loading ||
-      (
-        licensedMode &&
-        (
-          !assistantSession ||
-          !selectedExpert ||
-          !selectedModule
-        )
-      )
+      (licensedMode && (!assistantSession || !selectedExpert || !selectedModule))
     ) {
       return false
     }
 
     if (image && !licensedMode) return false
+
     const isDocument = image && !image.type.startsWith('image/')
     const imageController = image ? new AbortController() : null
     if (imageController) imageRequest.current = imageController
-    const imageTimeout = imageController ? setTimeout(() => imageController.abort(), 95000) : null
-
-    const tokenAtSend =
-      assistantSession?.token
+    const imageTimeout = imageController
+      ? setTimeout(() => imageController.abort(), 95000)
+      : null
+    const tokenAtSend = assistantSession?.token
 
     const newUserMessage = {
       role: 'user',
@@ -357,114 +292,106 @@ export default function UnifiedChatPage({
       timestamp: Date.now(),
     }
 
-    setMessages((previous) => [
-      ...previous,
-      newUserMessage,
-    ])
-
+    setMessages(previous => [...previous, newUserMessage])
     setLoading(true)
     history.busy.current++
-    try {
-      const historyHeaders = await history.prepare({view:'knowledge',expert:EXPERT_ROUTES[selectedExpert],module:selectedModule},text)
-      const response = image
-        ? await fetch(`${API_BASE}/api/v1/experts/${isDocument?'document-question':'image-question'}?${new URLSearchParams({ expert: selectedExpert, module: selectedModule, ...(isDocument?{filename:image.name}:{}) })}`, {
-            method: 'POST', cache: 'no-store', signal: imageController.signal,
-            headers: { ...historyHeaders, Authorization: `Bearer ${tokenAtSend}`, 'Content-Type': image.type, 'X-SPIA-Question': btoa(String.fromCharCode(...new TextEncoder().encode(text))) }, body: image,
-          })
-        : licensedMode
-        ? await fetch(
-            `${API_BASE}/api/v1/experts/${
-              EXPERT_ROUTES[selectedExpert]
-            }`,
-            {
-              method: 'POST',
-              cache: 'no-store',
-              headers: {
-                ...historyHeaders,
-                'Content-Type':
-                  'application/json',
-                Authorization:
-                  `Bearer ${tokenAtSend}`,
-              },
-              body: JSON.stringify({
-                question: text,
-                module: selectedModule,
-                source,
-              }),
-            }
-          )
-        : await fetch(
-            `${API_BASE}/api/unified-chat`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type':
-                  'application/json',
-              },
-              body: JSON.stringify({
-                message: text,
-                history: messages
-                  .slice(-8)
-                  .map((message) => ({
-                    role: message.role,
-                    content:
-                      message.content,
-                  })),
-              }),
-            }
-          )
 
-      if (imageController?.signal.aborted) return false
-      if (
-        licensedMode &&
-        activeTokenRef.current !==
-          tokenAtSend
-      ) {
-        return
+    try {
+      const historyHeaders = await history.prepare(
+        { view: 'knowledge', expert: EXPERT_ROUTES[selectedExpert], module: selectedModule },
+        text,
+      )
+      let response
+
+      if (image) {
+        const route = isDocument ? 'document-question' : 'image-question'
+        const query = new URLSearchParams({
+          expert: selectedExpert,
+          module: selectedModule,
+          ...(isDocument ? { filename: image.name } : {}),
+        })
+
+        response = await fetch(`${API_BASE}/api/v1/experts/${route}?${query}`, {
+          method: 'POST',
+          cache: 'no-store',
+          signal: imageController.signal,
+          headers: {
+            ...historyHeaders,
+            Authorization: `Bearer ${tokenAtSend}`,
+            'Content-Type': image.type,
+            'X-SPIA-Question': btoa(String.fromCharCode(...new TextEncoder().encode(text))),
+          },
+          body: image,
+        })
+      } else if (licensedMode) {
+        response = await fetch(`${API_BASE}/api/v1/experts/${EXPERT_ROUTES[selectedExpert]}`, {
+          method: 'POST',
+          cache: 'no-store',
+          headers: {
+            ...historyHeaders,
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokenAtSend}`,
+          },
+          body: JSON.stringify({
+            question: text,
+            module: selectedModule,
+            source,
+          }),
+        })
+      } else {
+        response = await fetch(`${API_BASE}/api/unified-chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            history: messages.slice(-8).map(message => ({
+              role: message.role,
+              content: message.content,
+            })),
+          }),
+        })
       }
 
       if (imageController?.signal.aborted) return false
-      if (
-        licensedMode &&
-        response.status === 401
-      ) {
-        switchAssistantUser(
-          'Sample session expired. Enter the presenter PIN again.'
-        )
+      if (licensedMode && activeTokenRef.current !== tokenAtSend) return
+
+      if (licensedMode && response.status === 401) {
+        switchAssistantUser('Sample session expired. Enter the presenter PIN again.')
         return
+      }
+
+      if (response.status === 429) {
+        const failure = await response.json().catch(() => null)
+
+        if (failure?.detail === 'Expert request limit reached. Try again shortly.') {
+          throw new Error('You’ve reached your request limit. Please try again next minute.')
+        }
+
+        throw new Error('The AI service is busy. Please try again shortly.')
       }
 
       if (image && !response.ok && response.status !== 401) {
-        const failure = await response.json().catch(() => ({}))
-        throw new Error(typeof failure.detail === 'string' ? failure.detail : `Attachment request failed (${response.status}).`)
-      }
-      if (!response.ok) {
-        if (
-          licensedMode &&
-          response.status === 403
-        ) {
-          throw new Error(
-            'This expert or module is not licensed for this user.'
-          )
-        }
-
+        const failure = await response.json().catch(() => null)
         throw new Error(
-          `Assistant request failed (${response.status}).`
+          typeof failure?.detail === 'string'
+            ? failure.detail
+            : `Attachment request failed (${response.status}).`,
         )
       }
 
-      const data = await response.json()
+      if (!response.ok) {
+        if (licensedMode && response.status === 403) {
+          throw new Error('This expert or module is not licensed for this user.')
+        }
 
-      if (imageController?.signal.aborted) return false
-      if (
-        licensedMode &&
-        activeTokenRef.current !==
-          tokenAtSend
-      ) {
-        return
+        throw new Error(`Assistant request failed (${response.status}).`)
       }
 
-      setMessages((previous) => [
+      const data = await response.json()
+      if (imageController?.signal.aborted) return false
+      if (licensedMode && activeTokenRef.current !== tokenAtSend) return
+
+      setMessages(previous => [
         ...previous,
         {
           role: 'assistant',
@@ -472,44 +399,30 @@ export default function UnifiedChatPage({
           translation_proof: data.translation_proof,
           expert: EXPERT_ROUTES[selectedExpert],
           module: selectedModule,
-          content:
-            data.reply ||
-            'I received an empty response from the backend service.',
-          sources: licensedMode
-            ? data.sources || []
-            : undefined,
+          content: data.reply || 'I received an empty response from the backend service.',
+          sources: licensedMode ? data.sources || [] : undefined,
           timestamp: Date.now(),
         },
       ])
+
       history.markResponse(data)
       return true
     } catch (error) {
       if (imageController?.signal.aborted) return false
-      console.error(
-        'Chat request failed:',
-        error
-      )
+      if (licensedMode && activeTokenRef.current !== tokenAtSend) return
+      console.error('Chat request failed:', error)
 
-      if (imageController?.signal.aborted) return false
-      if (
-        licensedMode &&
-        activeTokenRef.current !==
-          tokenAtSend
-      ) {
-        return
-      }
-
-      setMessages((previous) => [
+      setMessages(previous => [
         ...previous,
         {
           role: 'assistant',
           content: licensedMode
-            ? error.message ||
-              'The sample expert is unavailable right now.'
+            ? error.message || 'The sample expert is unavailable right now.'
             : 'Unable to reach the backend service. Confirm the API server is running.',
           timestamp: Date.now(),
         },
       ])
+
       return false
     } finally {
       history.busy.current = Math.max(0, history.busy.current - 1)
@@ -524,73 +437,65 @@ export default function UnifiedChatPage({
     setInputValue('')
   }
 
-  function changeExpert(event) { history.activateScope({view:'knowledge',expert:event.target.value.replace('_expert',''),module:selectedModule});setInputValue('') }
-  function changeModule(event) { history.activateScope({view:'knowledge',expert:selectedExpert.replace('_expert',''),module:event.target.value});setInputValue('') }
+  function changeExpert(event) {
+    history.activateScope({
+      view: 'knowledge',
+      expert: event.target.value.replace('_expert', ''),
+      module: selectedModule,
+    })
+    setInputValue('')
+  }
 
-  const hasMessages =
-    messages.length > 0
+  function changeModule(event) {
+    history.activateScope({
+      view: 'knowledge',
+      expert: selectedExpert.replace('_expert', ''),
+      module: event.target.value,
+    })
+    setInputValue('')
+  }
 
   return (
     <div className="flex-1 min-h-0 min-w-0 relative overflow-hidden flex flex-col">
       <AnimatedBackground />
 
-      {licensedMode &&
-        (
-          allowedExperts.length > 1 ||
-          allowedModules.length > 1
-        ) && (
-          <div className="relative z-10 shrink-0 border-b border-border bg-surface/90 px-5 py-2 flex flex-wrap gap-3 items-center text-xs">
-            {allowedExperts.length > 1 && (
-              <label>
-                Expert{' '}
+      {licensedMode && (allowedExperts.length > 1 || allowedModules.length > 1) && (
+        <div className="relative z-10 shrink-0 border-b border-border bg-surface/90 px-5 py-2 flex flex-wrap gap-3 items-center text-xs">
+          {allowedExperts.length > 1 && (
+            <label>
+              Expert{' '}
+              <select
+                value={selectedExpert}
+                onChange={changeExpert}
+                className="ml-1 rounded-md border border-border bg-bg px-2 py-1"
+              >
+                {allowedExperts.map(name => (
+                  <option key={name} value={name}>
+                    {name === 'support_expert' ? 'Support' : 'Implementation'}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
-                <select
-                  value={selectedExpert}
-                  onChange={changeExpert}
-                  className="ml-1 rounded-md border border-border bg-bg px-2 py-1"
-                >
-                  {allowedExperts.map(
-                    (name) => (
-                      <option
-                        key={name}
-                        value={name}
-                      >
-                        {name ===
-                        'support_expert'
-                          ? 'Support'
-                          : 'Implementation'}
-                      </option>
-                    )
-                  )}
-                </select>
-              </label>
-            )}
-
-            {allowedModules.length > 1 && (
-              <label>
-                Module{' '}
-
-                <select
-                  value={selectedModule}
-                  onChange={changeModule}
-                  className="ml-1 rounded-md border border-border bg-bg px-2 py-1"
-                >
-                  {allowedModules.map(
-                    (name) => (
-                      <option
-                        key={name}
-                        value={name}
-                      >
-                        {MODULE_LABELS[name] ||
-                          name}
-                      </option>
-                    )
-                  )}
-                </select>
-              </label>
-            )}
-          </div>
-        )}
+          {allowedModules.length > 1 && (
+            <label>
+              Module{' '}
+              <select
+                value={selectedModule}
+                onChange={changeModule}
+                className="ml-1 rounded-md border border-border bg-bg px-2 py-1"
+              >
+                {allowedModules.map(name => (
+                  <option key={name} value={name}>
+                    {MODULE_LABELS[name] || name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+      )}
 
       {!hasMessages ? (
         <div
@@ -603,117 +508,62 @@ export default function UnifiedChatPage({
         >
           <div ref={identityHeaderRef} />
           <div ref={tabsHeaderRef} />
+
           <div className="w-full flex flex-col items-center px-4 py-5 sm:px-6">
-          <motion.h1
-            initial={{
-              opacity: 0,
-              y: 10,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              duration: 0.5,
-              ease: 'easeOut',
-            }}
-            className="
-              text-[28px]
-              font-bold
-              mb-2
-              tracking-tight
-              text-center
-              bg-gradient-to-r
-              from-[#1E3A8A]
-              via-primary
-              to-[#1E3A8A]
-              bg-[length:200%_auto]
-              bg-clip-text
-              text-transparent
-              animate-shimmer
-            "
-          >
-            {getGreeting()}
-          </motion.h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="text-[28px] font-bold mb-2 tracking-tight text-center bg-gradient-to-r from-[#1E3A8A] via-primary to-[#1E3A8A] bg-[length:200%_auto] bg-clip-text text-transparent animate-shimmer"
+            >
+              {getGreeting()}
+            </motion.h1>
 
-          <p
-            className="
-              text-[13.5px]
-              text-ink-secondary
-              mb-4
-              text-center
-              max-w-2xl
-              leading-relaxed
-            "
-          >
-            {subtitle}
-          </p>
+            <p className="text-[13.5px] text-ink-secondary mb-4 text-center max-w-2xl leading-relaxed">
+              {subtitle}
+            </p>
 
-          <div className="w-full max-w-4xl">
-            <div className="mb-2 flex items-center justify-between gap-2 px-1">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Quick actions
+            <div className="w-full max-w-4xl">
+              <div className="mb-2 flex items-center justify-between gap-2 px-1">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                  Quick actions
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  Select a topic to get started
+                </div>
               </div>
 
-              <div className="text-[11px] text-slate-400">
-                Select a topic to get started
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 [&_button]:px-3 [&_button]:py-3">
-              {suggestions.map(
-                (suggestion) => (
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 [&_button]:px-3 [&_button]:py-3">
+                {suggestions.map(suggestion => (
                   <SuggestionChip
                     key={suggestion.label}
                     icon={suggestion.icon}
                     label={suggestion.label}
-                    description={
-                      suggestion.description
-                    }
-                    category={
-                      suggestion.category
-                    }
-                    onClick={() =>
-                      handleSend(
-                        suggestion.prompt,
-                        suggestion.source ||
-                          null
-                      )
-                    }
+                    description={suggestion.description}
+                    category={suggestion.category}
+                    onClick={() => handleSend(suggestion.prompt, suggestion.source || null)}
                   />
-                )
-              )}
-            </div>
+                ))}
+              </div>
 
-            {licensedMode &&
-              suggestionsLoading && (
-                <p
-                  role="status"
-                  className="mt-4 text-center text-xs text-ink-secondary"
-                >
+              {licensedMode && suggestionsLoading && (
+                <p role="status" className="mt-4 text-center text-xs text-ink-secondary">
                   Finding questions in your approved reference material…
                 </p>
               )}
 
-            {licensedMode &&
-              suggestionsError && (
-                <p
-                  role="alert"
-                  className="mt-4 text-center text-xs text-red-600"
-                >
+              {licensedMode && suggestionsError && (
+                <p role="alert" className="mt-4 text-center text-xs text-red-600">
                   {suggestionsError}
                 </p>
               )}
 
-            {licensedMode &&
-              !suggestionsLoading &&
-              !suggestionsError &&
-              suggestions.length < 6 && (
+              {licensedMode && !suggestionsLoading && !suggestionsError && suggestions.length < 6 && (
                 <p className="mt-4 text-center text-xs text-ink-secondary">
                   {suggestions.length} approved questions available for this expert and module.
                 </p>
               )}
-          </div>
+            </div>
           </div>
         </div>
       ) : (
@@ -727,12 +577,20 @@ export default function UnifiedChatPage({
         >
           <div ref={identityHeaderRef} />
           <div ref={tabsHeaderRef} />
+
           <div className="max-w-3xl mx-auto px-6 py-6 flex flex-col gap-4">
             <HistoryOlder history={history} />
-            {messages.map(
-              (message, index) => (
-                <div key={message.id || index} data-chat-message data-chat-role={message.role}>
-                <ChatMessage messageId={message.id} onEdit={message.id && message.role === 'user' ? () => history.edit(message.id).catch(e => history.setError(e.message)) : undefined} attachment={message.attachment}
+
+            {messages.map((message, index) => (
+              <div key={message.id || index} data-chat-message data-chat-role={message.role}>
+                <ChatMessage
+                  messageId={message.id}
+                  onEdit={
+                    message.id && message.role === 'user'
+                      ? () => history.edit(message.id).catch(error => history.setError(error.message))
+                      : undefined
+                  }
+                  attachment={message.attachment}
                   role={message.role}
                   language={message.language}
                   translation={licensedMode && message.translation_proof ? {
@@ -743,44 +601,29 @@ export default function UnifiedChatPage({
                     sources: message.sources || [],
                     onSessionExpired: switchAssistantUser,
                   } : null}
-                  content={
-                    message.content
-                  }
-                  sources={
-                    message.sources
-                  }
-                  timestamp={
-                    message.timestamp
-                  }
+                  content={message.content}
+                  sources={message.sources}
+                  timestamp={message.timestamp}
                 />
-                </div>
-              )
-            )}
+              </div>
+            ))}
 
-            {loading && (
-              <TypingIndicator />
-            )}
+            {loading && <TypingIndicator />}
           </div>
         </div>
       )}
 
       <div className="relative z-10 shrink-0">
         <MessageInput
-          key={`${conversationId}:${selectedExpert}:${selectedModule}:${assistantSession?.token || ""}`}
+          key={`${conversationId}:${selectedExpert}:${selectedModule}:${assistantSession?.token || ''}`}
           initialImage={history.draft?.image}
           onSend={(text, source, image) => handleSend(text, source || history.draft?.source || null, image)}
           disabled={loading}
           value={inputValue}
-          onValueChange={
-            setInputValue
-          }
+          onValueChange={setInputValue}
           onClear={handleClear}
-          hasMessages={
-            hasMessages
-          }
-          inputPlaceholder={
-            placeholder
-          }
+          hasMessages={hasMessages}
+          inputPlaceholder={placeholder}
           voiceEnabled={licensedMode && Boolean(assistantSession?.token && selectedExpert && selectedModule)}
           showVoiceControl={licensedMode}
           voiceContext={{ token: assistantSession?.token, expert: selectedExpert, module: selectedModule }}
