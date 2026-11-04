@@ -1,3 +1,4 @@
+import ReportSoftwareBug from '../components/ReportSoftwareBug.jsx'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -260,13 +261,19 @@ export default function AppShell({ licensedMode = false }) {
                     {assistantSession.user.role.replace(/_/g, ' ')}
                   </span>
 
-                  <button
-                    type="button"
-                    onClick={() => switchAssistantUser()}
-                    className="text-primary font-semibold whitespace-nowrap hover:underline"
-                  >
-                    Switch user
-                  </button>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <ReportSoftwareBug
+                      key={assistantSession.token}
+                      token={assistantSession.token}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => switchAssistantUser()}
+                      className="text-primary font-semibold whitespace-nowrap hover:underline"
+                    >
+                      Switch user
+                    </button>
+                  </div>
                 </div>
               )}
 

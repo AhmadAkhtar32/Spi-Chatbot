@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from spia.api.bug_reports import router as bug_reports_router
 
 from spia.core.paths import BACKEND_DIR
 
@@ -49,6 +50,7 @@ from spia.api.escalations import router as escalation_router
 app.include_router(escalation_router)
 from spia.api.feedback import router as feedback_router
 app.include_router(feedback_router)
+app.include_router(bug_reports_router)
 app.include_router(access_router)
 app.include_router(business_router)
 app.include_router(expert_router)
