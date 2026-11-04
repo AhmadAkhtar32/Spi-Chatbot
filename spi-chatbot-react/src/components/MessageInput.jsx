@@ -63,23 +63,27 @@ export default function MessageInput({
     setImageFile(file.type===expected?file:new File([file],file.name,{type:expected,lastModified:file.lastModified}))
   }
 
-  async function dispatchQuestion(question) {
-    if (imageSending.current) return
-    if (!imageFile) { onSend(question); setText(''); return }
-    imageSending.current = true
-    const selected = imageFile
-    try {
-      const sent = await onSend(question, null, selected)
-      if (!voice.current.active) return
-      if (sent === false) {
-        setText(question)
-        setVoiceError('Attachment request failed. Your file and question are kept for retry.')
-      } else {
-        setImageFile(current => current === selected ? null : current)
-        setText('')
-      }
-    } finally { imageSending.current = false }
+async function dispatchQuestion(question) {
+  if (imageSending.current) return
+  if (!imageFile) { onSend(question); setText(''); return }
+  imageSending.current = true
+  const selected = imageFile
+  setImageFile(null)
+  setText('')
+  setVoiceError('')
+  try {
+    const sent = await onSend(question, null, selected)
+    if (sent === false) throw new Error('Attachment send failed')
+  } catch {
+    if (voice.current.active) {
+      setImageFile(current => current ?? selected)
+      setText(question)
+      setVoiceError('Attachment request failed. Your file and question are kept for retry.')
+    }
+  } finally {
+    imageSending.current = false
   }
+}
 
   function recordingKey(event) {
     if (event.nativeEvent?.isComposing || event.repeat) return
