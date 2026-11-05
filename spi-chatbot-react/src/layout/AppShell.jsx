@@ -7,6 +7,7 @@ import usePersonalHistory from '../services/usePersonalHistory.js'
 import TopBar from './TopBar.jsx'
 import Sidebar from './Sidebar.jsx'
 import { API_BASE } from '../api/client.js'
+import BugReportQueue from '../components/BugReportQueue.jsx'
 
 export default function AppShell({ licensedMode = false }) {
   const navigate = useNavigate()
@@ -266,6 +267,10 @@ export default function AppShell({ licensedMode = false }) {
                       key={assistantSession.token}
                       token={assistantSession.token}
                     />
+                    <BugReportQueue
+  key={`bug-queue-${assistantSession.token}`}
+  token={assistantSession.token}
+/>
                     <button
                       type="button"
                       onClick={() => switchAssistantUser()}
